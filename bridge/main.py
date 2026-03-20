@@ -24,14 +24,40 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe(MQTT_TOPIC)
     print(f"📡 Écoute sur le topic : {MQTT_TOPIC}")
 
+def save_to_db(topic, value):
+    try:
+        # On se connecte à la base
+        conn = mysql.connector.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASS,
+            database=DB_NAME
+        )
+        cursor = conn.cursor()
+        
+        # On insère la donnée (la date se mettra toute seule grâce à CURRENT_TIMESTAMP)
+        sql = "INSERT INTO sensor_data (topic, value) VALUES (%s, %s)"
+        val = (topic, float(value))
+        
+        cursor.execute(sql, val)
+        conn.commit()
+        print(f"💾 Donnée sauvegardée dans MySQL : {topic} = {value}")
+        
+    except mysql.connector.Error as err:
+        print(f"❌ Erreur MySQL : {err}")
+    finally:
+        if 'conn' in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
+
 def on_message(client, userdata, msg):
     topic = msg.topic
     payload = msg.payload.decode("utf-8")
     
-    print(f"🔔 Message reçu sur [{topic}] : {payload}")
+    print(f"🔔 Message MQTT reçu sur [{topic}] : {payload}")
     
-    # Ici, nous ajouterons plus tard le code pour insérer la donnée dans MySQL
-    # save_to_db(topic, payload)
+    # On sauvegarde immédiatement dans la base de données
+    save_to_db(topic, payload)
 
 # ==========================================
 # INITIALISATION
