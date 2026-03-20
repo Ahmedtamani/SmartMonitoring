@@ -6,7 +6,8 @@ import json
 # ==========================================
 # CONFIGURATION
 # ==========================================
-MQTT_BROKER = "127.0.0.1" # Mettre l'IP du Raspberry Pi du FabLab plus tard
+# /!\ Remplacer par l'IP du serveur MQTT de l'université /!\
+MQTT_BROKER = "127.0.0.1" 
 MQTT_PORT = 1883
 MQTT_TOPIC = "FABLAB_21_22/#" # Le # permet de s'abonner à tous les sous-topics
 
@@ -54,10 +55,25 @@ def on_message(client, userdata, msg):
     topic = msg.topic
     payload = msg.payload.decode("utf-8")
     
-    print(f"🔔 Message MQTT reçu sur [{topic}] : {payload}")
+    print(f"🔔 Message MQTT brut reçu sur [{topic}] : {payload}")
     
-    # On sauvegarde immédiatement dans la base de données
-    save_to_db(topic, payload)
+    # On va essayer de décoder le payload comme du JSON
+
+    try:
+        data = json.loads(payload)
+        
+        # On va chercher la donnée utile. 
+        if isinstance(data, dict) and len(data) > 0:
+            extracted_value = list(data.values())[0]
+            print(f"✅ JSON décodé avec succès ! Valeur trouvée : {extracted_value}")
+            save_to_db(topic, extracted_value)
+        else:
+            print("⚠️ Le JSON est vide ou mal formaté.")
+
+    except json.JSONDecodeError:
+        # Si ça plante, c'est que ce n'était pas un JSON valide. On peut quand même sauvegarder la valeur brute.
+        print(f"⚠️ Ce n'est pas du JSON, on sauvegarde la valeur brute : {payload}")
+        save_to_db(topic, payload)
 
 # ==========================================
 # INITIALISATION
