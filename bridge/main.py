@@ -1,156 +1,203 @@
-import paho.mqtt.client as mqtt
-import mysql.connector
-from datetime import datetime
+"""Bridge MQTT -> MySQL (Étudiant 4).
+
+Rôle:
+- écouter les topics MQTT du projet,
+- extraire les valeurs numériques utiles,
+- stocker en base avec un throttling par topic.
+"""
+
 import json
+import os
+import re
 import time
 
-# ==========================================
-# CONFIGURATION
-# ==========================================
-# Configuration du serveur MQTT de l'Université
-MQTT_BROKER = "mqtt.univ-cotedazur.fr" 
-MQTT_PORT = 443
-MQTT_USER = "fablab2122"
-MQTT_PASS = "2122"
-MQTT_TOPIC = "FABLAB_21_22/#"
+import mysql.connector
+import paho.mqtt.client as mqtt
 
-# Configuration de la base de données locale
-DB_HOST = "127.0.0.1"
-DB_USER = "fablab_user"
-DB_PASS = "fablab_password"
-DB_NAME = "fablab_monitoring"
+# MQTT
+MQTT_BROKER = os.getenv("MQTT_BROKER", "mqtt.univ-cotedazur.fr")
+MQTT_PORT = int(os.getenv("MQTT_PORT", "443"))
+MQTT_USER = os.getenv("MQTT_USER", "fablab2122")
+MQTT_PASS = os.getenv("MQTT_PASS", "2122")
+MQTT_TOPIC = os.getenv("MQTT_TOPIC", "FABLAB_21_22/#")
 
-# ==========================================
-# GESTION DU CACHE (SMART SAVING)
-# ==========================================
-# Variable pour mémoriser quand a eu lieu le dernier enregistrement pour CHAQUE capteur
+# MySQL
+DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
+DB_USER = os.getenv("DB_USER", "fablab_user")
+DB_PASS = os.getenv("DB_PASS", "fablab_password")
+DB_NAME = os.getenv("DB_NAME", "fablab_monitoring")
+
+# Throttling par topic
+SAVE_INTERVAL_SECONDS = max(0, int(os.getenv("SAVE_INTERVAL_SECONDS", "60")))
 last_saved_time = {}
-# Intervalle de sauvegarde en base de données en secondes
-SAVE_INTERVAL_SECONDS = 60 
 
-# ==========================================
-# FONCTIONS MQTT
-# ==========================================
+
 def on_connect(client, userdata, flags, rc):
     print(f"✅ Connecté au broker MQTT avec le code {rc}")
     client.subscribe(MQTT_TOPIC)
     print(f"📡 Écoute sur le topic : {MQTT_TOPIC}")
 
+
+def normalize_key(key):
+    """Normalise une clé de payload en suffixe de topic stable."""
+    clean = key.strip().lower().replace("°", "deg")
+    clean = re.sub(r"\s+", "_", clean)
+    clean = re.sub(r"[^a-z0-9_]+", "", clean)
+    return clean or "field"
+
+
+def build_sub_topic(base_topic, key):
+    """Construit un sous-topic sans slash en double."""
+    return f"{base_topic.rstrip('/')}/{normalize_key(key)}"
+
+
+def extract_numeric_pairs_from_broken_payload(payload):
+    """Récupère des paires numériques depuis un pseudo-JSON cassé."""
+    pairs = {}
+    for key, raw_value in re.findall(r'"([^"]+)"\s*:\s*([^,}\{]*)', payload):
+        value = raw_value.strip().strip('"')
+        if value == "":
+            continue
+
+        lowered = value.lower()
+        if lowered in ("true", "false"):
+            pairs[key] = 1.0 if lowered == "true" else 0.0
+            continue
+
+        try:
+            pairs[key] = float(value)
+        except ValueError:
+            continue
+
+    return pairs
+
+
+def flatten_numeric_points(topic, data):
+    """Extrait les valeurs numériques d'un dict JSON (niveau 1 + sous-objets numériques)."""
+    numeric_points = []
+
+    for key, value in data.items():
+        if key in {"ts", "timestamp_ms"}:
+            continue
+
+        if isinstance(value, dict):
+            # Compatibilité capteurs qui publient des objets (ex: stats.avg, radar.c1.x)
+            for child_key, child_value in value.items():
+                if isinstance(child_value, (int, float, bool)) and not isinstance(child_value, str):
+                    numeric_points.append((build_sub_topic(topic, f"{key}_{child_key}"), float(child_value)))
+            continue
+
+        if isinstance(value, (int, float, bool)) and not isinstance(value, str):
+            numeric_points.append((build_sub_topic(topic, key), float(value)))
+
+    return numeric_points
+
+
+def extract_numeric_points(topic, payload):
+    """Retourne une liste [(topic, value)] à partir d'un payload MQTT."""
+    # 1) valeur brute
+    try:
+        return [(topic, float(payload))], "raw"
+    except ValueError:
+        pass
+
+    # 2) JSON valide
+    try:
+        data = json.loads(payload)
+        if isinstance(data, dict):
+            points = flatten_numeric_points(topic, data)
+            return points, "json"
+        return [], "json-non-dict"
+    except json.JSONDecodeError:
+        pass
+
+    # 3) JSON cassé mais récupérable
+    recovered = extract_numeric_pairs_from_broken_payload(payload)
+    if recovered:
+        points = [(build_sub_topic(topic, key), value) for key, value in recovered.items()]
+        return points, "broken-json"
+
+    return [], "unusable"
+
+
 def save_to_db(topic, value):
-    # Logique d'économie de la base de données
+    """Insère une valeur en DB si le throttle du topic est écoulé."""
     current_time = time.time()
-    
-    # Si le capteur n'est jamais venu, on l'initialise à 0
-    if topic not in last_saved_time:
-        last_saved_time[topic] = 0
-        
-    # Vérification : Est-ce que le délai est écoulé ?
-    time_since_last_save = current_time - last_saved_time[topic]
-    if time_since_last_save < SAVE_INTERVAL_SECONDS:
-        print(f"⏳ Sauvegarde ignorée : Le capteur {topic} a été écrit il y a {int(time_since_last_save)}s.")
+    last_saved_time.setdefault(topic, 0)
+
+    elapsed = current_time - last_saved_time[topic]
+    if elapsed < SAVE_INTERVAL_SECONDS:
+        print(f"⏳ Ignoré (throttle): {topic}, dernier insert il y a {int(elapsed)}s")
         return
 
     try:
         float_value = float(value)
     except (ValueError, TypeError):
-        print(f"⚠️ Impossible de convertir '{value}' en nombre pour le topic {topic}. Sauvegarde annulée.")
+        print(f"⚠️ Ignoré (non numérique): topic={topic}, value={value}")
         return
 
     try:
-        # On se connecte à la base
         conn = mysql.connector.connect(
             host=DB_HOST,
             user=DB_USER,
             password=DB_PASS,
-            database=DB_NAME
+            database=DB_NAME,
         )
         cursor = conn.cursor()
-        
-        # On insère la donnée (la date se mettra toute seule grâce à CURRENT_TIMESTAMP)
-        sql = "INSERT INTO sensor_data (topic, value) VALUES (%s, %s)"
-        val = (topic, float_value)
-        
-        cursor.execute(sql, val)
+        cursor.execute("INSERT INTO sensor_data (topic, value) VALUES (%s, %s)", (topic, float_value))
         conn.commit()
-        print(f"💾 Donnée sauvegardée dans MySQL : {topic} = {value}")
-        
-        # On met à jour l'horloge interne pour ce capteur
         last_saved_time[topic] = current_time
-        
+        print(f"💾 Sauvé: {topic} = {float_value}")
     except mysql.connector.Error as err:
         print(f"❌ Erreur MySQL : {err}")
     finally:
-        if 'conn' in locals() and conn.is_connected():
+        if "conn" in locals() and conn.is_connected():
             cursor.close()
             conn.close()
+
 
 def on_message(client, userdata, msg):
     try:
         topic = msg.topic
         payload = msg.payload.decode("utf-8")
-        
-        print(f"🔔 Message MQTT brut reçu sur [{topic}] : {payload}")
-        
-        # Cas 1 : Si c'est un simple chiffre (comme '320'), on le sauvegarde direct.
-        try:
-            # On essaie d'abord de voir si c'est bêtement un chiffre (entier ou flottant)
-            val = float(payload)
-            print(f"✅ Valeur numérique brute détectée : {val}")
-            save_to_db(topic, val)
-            return 
-        except ValueError:
-            pass # Ce n'est pas un nombre pur, ça doit être du texte ou du JSON. On continue.
+        print(f"🔔 Message MQTT [{topic}] : {payload}")
 
-        # Cas 2 : Si c'est du JSON 
-        try:
-            data = json.loads(payload)
-            
-            if isinstance(data, dict):
-                print(f"✅ JSON détecté sur {topic}. Analyse des champs...")
-                for key, value in data.items():
-                    # On ignore les horodatages ou les données trop complexes (sous-dossiers)
-                    if key in ["ts", "timestamp_ms"] or isinstance(value, dict):
-                        continue
-                    
-                    # Si c'est un nombre ou un booléen (True/False)
-                    if isinstance(value, (int, float, bool)) and not isinstance(value, str):
-                        # Convertit les booléens en 1.0 ou 0.0, et garde les nombres
-                        float_val = float(value) 
-                        sub_topic = f"{topic}/{key}"
-                        save_to_db(sub_topic, float_val)
+        points, mode = extract_numeric_points(topic, payload)
 
-            return # On a fini de traiter le JSON
+        if mode == "broken-json" and points:
+            print(f"🛠️ JSON cassé récupéré partiellement sur [{topic}] ({len(points)} champs numériques).")
+        elif mode == "json":
+            print(f"✅ JSON détecté sur {topic}. Champs numériques extraits: {len(points)}")
+        elif mode == "raw":
+            print(f"✅ Valeur numérique brute détectée sur {topic}")
 
-        except json.JSONDecodeError:
-            # Cas 3 : Ni un chiffre, ni un JSON valide (comme les messages cassés de Distrikase)
-            print(f"⚠️ Donnée inexploitable ou mal formatée ignorée sur [{topic}] : {payload}")
+        if not points:
+            print(f"⚠️ Ignoré (inexploitable): topic={topic}")
             return
-            
-    except Exception as e:
-        print(f"❌ Erreur inattendue lors du traitement du message sur {msg.topic} : {e}")
 
-# ==========================================
-# INITIALISATION
-# ==========================================
+        for sub_topic, value in points:
+            save_to_db(sub_topic, value)
+
+    except Exception as err:
+        print(f"❌ Erreur inattendue sur {msg.topic}: {err}")
+
+
 if __name__ == "__main__":
-    print("🚀 Démarrage du Bridge MQTT -> MySQL...")
-    
-    # IMPORTANT: L'université utilise un protocole WebSockets via le port 443 pour contourner les pare-feu
+    print("🚀 Démarrage du bridge MQTT -> MySQL...")
+
     client = mqtt.Client(transport="websockets")
     client.ws_set_options(path="/ws", headers=None)
-    
-    # L'université a activé TLS (Chiffrement SSL) et requiert une authentification
     client.tls_set()
     client.username_pw_set(MQTT_USER, MQTT_PASS)
-    
+
     client.on_connect = on_connect
     client.on_message = on_message
-    
+
     try:
-        print(f"🔗 Tentative de connexion à {MQTT_BROKER} sur le port {MQTT_PORT}...")
+        print(f"🔗 Connexion à {MQTT_BROKER}:{MQTT_PORT}...")
         client.connect(MQTT_BROKER, MQTT_PORT, 60)
-        client.loop_forever() # Garde le script en vie pour écouter en continu
+        client.loop_forever()
     except KeyboardInterrupt:
         print("\n🛑 Arrêt du bridge.")
-    except Exception as e:
-        print(f"❌ Erreur de connexion : {e}")
+    except Exception as err:
+        print(f"❌ Erreur de connexion : {err}")
