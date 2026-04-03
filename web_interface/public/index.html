@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="fr" class="antialiased dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Monitoring Ultra | FabLab</title>
+    <!-- Polices Google : Plus Jakarta Sans (très moderne) -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Icônes Professionnelles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS avec Configuration Personnalisée -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                    animation: {
+                        'blob': 'blob 7s infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 8s linear infinite',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Librairies : Chart.js et Paho MQTT -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+
+    <style>
+        body {
+            background-color: #030712; /* Très sombre, très pro */
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism Dark Mode */
+        .glass-dark {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .glass-nav-dark {
+            background: rgba(3, 7, 18, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-content { display: none; opacity: 0; transform: translateY(15px); transition: all 0.4s ease; }
+        .tab-content.active { display: block; opacity: 1; transform: translateY(0); animation: slideInFade 0.5s ease-out forwards; }
+        
+        @keyframes slideInFade {
+            0% { opacity: 0; transform: translateY(20px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Effet Wow de carte au survol - Glow border & Lift */
+        .neon-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .neon-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.15), inset 0 0 20px rgba(99, 102, 241, 0.05);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Fancy Toggle iOS/Cyberpunk style */
+        .toggle-checkbox:checked { right: 0; border-color: #10B981; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #10B981; box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
+        
+        .bg-grid-pattern {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* Effet gradient mesh en arrière plan */
+        .gradient-bg {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1; overflow: hidden; pointer-events: none;
+        }
+        .blob-1 { position: absolute; top: -10%; left: -10%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(56,189,248,0.15) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; filter: blur(40px); }
+        .blob-2 { position: absolute; bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(99,102,241,0.1) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; filter: blur(60px); }
+        .blob-3 { position: absolute; top: 40%; left: 40%; width: 40vw; height: 40vw; background: radial-gradient(circle, rgba(168,85,247,0.08) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; filter: blur(50px); }
+    </style>
+</head>
+<body class="bg-grid-pattern selection:bg-indigo-500/30">
+
+    <!-- ARRIÈRE PLAN ANIME -->
+    <div class="gradient-bg">
+        <div class="blob-1 animate-blob"></div>
+        <div class="blob-2 animate-blob" style="animation-delay: 2s"></div>
+        <div class="blob-3 animate-blob" style="animation-delay: 4s"></div>
+    </div>
+
+    <!-- NAVBAR ULTRA PREMIUM -->
+    <nav class="glass-nav-dark sticky top-0 z-50 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                
+                <!-- Logo -->
+                <div class="flex items-center gap-4 group cursor-default">
+                    <div class="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
+                        <div class="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <i class="fa-solid fa-satellite-dish text-2xl font-light"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-white font-extrabold tracking-tight text-xl">
+                            IOT<span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400"> Core</span>
+                        </h1>
+                        <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase tracking-[0.2em] font-bold mt-1">
+                            Live Feed
+                            <span class="relative flex h-2 w-2">
+                                <span id="mqtt-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span id="mqtt-dot" class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Onglets -->
+                <div class="flex items-center gap-1 p-1.5 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
+                    <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all bg-white/10 text-white shadow-lg border border-white/5 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-simple text-cyan-400"></i> Metrics
+                    </button>
+                    <button onclick="verifyAdmin()" id="btn-admin" class="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-rose-400"></i> Console
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-7xl mx-auto py-10 px-6 lg:px-8 relative z-10">
+        
+        <!-- ======================= -->
+        <!-- DASHBOARD (Metrics)     -->
+        <!-- ======================= -->
+        <div id="dashboard" class="tab-content active space-y-8">
+            
+            <!-- HEADER APP -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-4 border-b border-white/5">
+                <div>
+                    <h2 class="text-3xl font-extrabold text-white flex items-center gap-3">
+                        Vue d'Ensemble <span class="bg-indigo-500/20 text-indigo-300 text-xs px-3 py-1 rounded-full border border-indigo-500/30 uppercase tracking-widest">En direct</span>
+                    </h2>
+                    <p class="text-slate-400 font-medium mt-2">Monitorez instantanément l'état de votre flotte de capteurs.</p>
+                </div>
+                <!-- Bouton Sync Glow -->
+                <button onclick="requestDataFromPython()" class="relative group px-6 py-3 rounded-xl font-bold text-sm text-white bg-slate-800 border border-slate-700 hover:border-cyan-500/50 transition-all overflow-hidden flex items-center gap-3 shadow-lg">
+                    <div class="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <i class="fa-solid fa-rotate-right group-hover:rotate-180 transition-transform duration-700 ease-in-out text-cyan-400"></i>
+                    <span class="relative z-10">Sync Data</span>
+                </button>
+            </div>
+            
+            <!-- KPI GRID -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                <!-- KPI 1 -->
+                <div class="glass-dark neon-card rounded-3xl p-6 relative">
+                    <div class="absolute top-0 right-0 p-6 opacity-20">
+                        <i class="fa-solid fa-users text-4xl text-cyan-400"></i>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-person-shelter"></i>
+                    </div>
+                    <p class="text-xs text-slate-400 uppercase font-extrabold tracking-widest mb-1">Capteur Radar</p>
+                    <div class="flex items-baseline gap-2">
+                        <h3 class="text-4xl font-black text-white tracking-tight" id="kpi-max-users">--</h3>
+                        <span class="text-cyan-400 font-medium text-sm">pax</span>
+                    </div>
+                </div>
+
+                <!-- KPI 2 -->
+                <div class="glass-dark neon-card rounded-3xl p-6 relative">
+                    <div class="absolute top-0 right-0 p-6 opacity-20">
+                        <i class="fa-solid fa-temperature-full text-4xl text-rose-400"></i>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-fire"></i>
+                    </div>
+                    <p class="text-xs text-slate-400 uppercase font-extrabold tracking-widest mb-1">Température</p>
+                    <div class="flex items-baseline gap-2">
+                        <h3 class="text-4xl font-black text-white tracking-tight" id="kpi-temp">--</h3>
+                        <span class="text-rose-400 font-medium text-sm">°C</span>
+                    </div>
+                    <p id="kpi-temp-casiers" class="mt-2 text-xs text-slate-400 font-mono">C1: -- °C · C2: -- °C</p>
+                </div>
+
+                <!-- KPI 3 -->
+                <div class="glass-dark neon-card rounded-3xl p-6 relative">
+                    <div class="absolute top-0 right-0 p-6 opacity-20">
+                        <i class="fa-solid fa-droplet text-4xl text-blue-400"></i>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-cloud-rain"></i>
+                    </div>
+                    <p class="text-xs text-slate-400 uppercase font-extrabold tracking-widest mb-1">Humidité</p>
+                    <div class="flex items-baseline gap-2">
+                        <h3 class="text-4xl font-black text-white tracking-tight" id="kpi-hum">--</h3>
+                        <span class="text-blue-400 font-medium text-sm">%</span>
+                    </div>
+                </div>
+
+                <!-- KPI 4 -->
+                <div class="glass-dark neon-card rounded-3xl p-6 relative">
+                    <div class="absolute top-0 right-0 p-6 opacity-20">
+                        <i class="fa-solid fa-wind text-4xl text-amber-400"></i>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-mask-ventilator"></i>
+                    </div>
+                    <p class="text-xs text-slate-400 uppercase font-extrabold tracking-widest mb-1">CO2 EQ</p>
+                    <div class="flex items-baseline gap-2 text-amber-400">
+                        <h3 class="text-4xl font-black text-white tracking-tight" id="kpi-co2">--</h3>
+                        <span id="kpi-co2-unit" class="font-bold text-sm ml-1 uppercase tracking-wider">ppm</span>
+                    </div>
+                    <p id="kpi-co2-label" class="mt-2 text-xs text-slate-400 font-mono">Source: CO2</p>
+                </div>
+            </div>
+
+            <!-- CHARTS AREA -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <!-- Main Chart -->
+                <div class="xl:col-span-2 glass-dark neon-card rounded-3xl p-6 relative overflow-hidden group">
+                    <!-- Glow effect behind chart -->
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-indigo-500/10 rounded-full blur-[80px] pointer-events-none"></div>
+
+                    <div class="flex justify-between items-center mb-8 relative z-10">
+                        <div>
+                            <h3 class="font-bold text-white text-xl flex items-center gap-3">
+                                <span class="relative flex h-3 w-3">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+                                </span>
+                                Qualité de l'Air (IAQ)
+                            </h3>
+                            <p class="text-sm text-slate-400 mt-1">Évolution de l'indice de qualité de l'air - Salle 122</p>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                            <i class="fa-solid fa-chart-area text-cyan-400 text-xs"></i>
+                            <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Live</span>
+                        </div>
+                    </div>
+                    
+                    <div class="relative h-[350px] w-full z-10">
+                        <canvas id="chartRadar"></canvas>
+                    </div>
+                </div>
+
+                <!-- Secondary Module -->
+                <div class="glass-dark neon-card rounded-3xl p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/20"></div>
+                    
+                    <div class="relative z-10">
+                        <div class="relative">
+                            <div class="w-24 h-24 rounded-full border-2 border-dashed border-slate-600 animate-spin-slow absolute -inset-2"></div>
+                            <div class="w-20 h-20 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 text-3xl shadow-xl mx-auto mb-6">
+                                <i class="fa-solid fa-microchip"></i>
+                            </div>
+                        </div>
+                        
+                        <h3 class="text-white font-bold text-xl mb-3">Module d'Extension</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed mb-6">
+                            Connectez un nouveau capteur IoT (ex: CO2, Luminosité) via MQTT pour le visualiser ici.
+                        </p>
+                        <button class="px-5 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-sm transition-all shadow">
+                            <i class="fa-solid fa-plus text-xs mr-2"></i> Ajouter Module
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================= -->
+        <!-- ADMIN (Console)         -->
+        <!-- ======================= -->
+        <div id="admin" class="tab-content space-y-8">
+            
+            <!-- ADMIN BANNER -->
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-rose-900/90 to-red-900/40 border border-rose-500/30 p-8 shadow-[0_0_40px_rgba(225,29,72,0.15)] flex justify-between items-center">
+                <!-- Background Pattern -->
+                <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+                
+                <div class="relative z-10">
+                    <h2 class="text-3xl font-black text-white flex items-center gap-4 mb-2 tracking-tight">
+                        <span class="p-2 bg-red-500/20 rounded-xl border border-red-500/50">
+                            <i class="fa-solid fa-shield-halved text-rose-400"></i>
+                        </span>
+                        Terminal de Commande
+                    </h2>
+                    <p class="text-rose-200/80 font-medium">Contrôle direct du hardware. Toute action est immédiate.</p>
+                </div>
+                <div class="relative z-10 hidden md:block">
+                    <div class="flex flex-col items-end">
+                        <div class="text-rose-400 text-xs font-mono mb-1">SECURITY CLEARANCE</div>
+                        <div class="bg-black/40 border border-rose-500/30 px-4 py-2 rounded-lg font-mono text-rose-300 font-bold tracking-widest shadow-inner">
+                            LEVEL: ROOT
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTIONS GRID -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <!-- Action 1 : Toggle Lumière -->
+                <div class="glass-dark neon-card rounded-3xl p-6 relative overflow-hidden group">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-yellow-500/10 rounded-full blur-2xl group-hover:bg-yellow-500/20 transition-all"></div>
+                    
+                    <div class="flex justify-between items-start mb-8 relative z-10">
+                        <div class="w-14 h-14 rounded-2xl bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 flex items-center justify-center text-2xl shadow-lg">
+                            <i class="fa-solid fa-lightbulb"></i>
+                        </div>
+                        <!-- Custom Toggle -->
+                        <div class="relative inline-block w-14 mr-2 align-middle select-none">
+                            <input type="checkbox" id="toggle-light" onclick="toggleLight(this)" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 border-slate-700 appearance-none cursor-pointer z-10 transition-all duration-300 origin-center"/>
+                            <label for="toggle-light" class="toggle-label block overflow-hidden h-7 rounded-full bg-slate-800 border border-slate-700 cursor-pointer transition-colors duration-300 shadow-inner"></label>
+                        </div>
+                    </div>
+                    <div class="relative z-10">
+                        <h3 class="font-extrabold text-white text-xl">Éclairage Principal</h3>
+                        <p class="text-sm text-slate-400 mb-4 mt-1">Atelier FabLab Salle 12</p>
+                        <div class="inline-flex items-center gap-2 bg-black/40 border border-white/5 rounded-lg px-3 py-1.5">
+                            <i class="fa-solid fa-network-wired text-[10px] text-slate-500"></i>
+                            <span class="text-[10px] font-mono text-slate-400 tracking-widest">CMD/lumiere1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action 2 : Porte -->
+                <div class="glass-dark neon-card rounded-3xl p-6 relative overflow-hidden group">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
+                    
+                    <div class="flex justify-between items-start mb-8 relative z-10">
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 flex items-center justify-center text-2xl shadow-lg">
+                            <i class="fa-solid fa-door-open"></i>
+                        </div>
+                    </div>
+                    <div class="relative z-10">
+                        <h3 class="font-extrabold text-white text-xl">Serrure Magnétique</h3>
+                        <p class="text-sm text-slate-400 mb-6 mt-1">Porte d'entrée principale</p>
+                        <button onclick="sendCommand('FABLAB_21_22/CMD/porte', 'OPEN')" class="w-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 font-bold py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-3">
+                            <i class="fa-solid fa-unlock-keyhole"></i> Déverrouiller (3s)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action 3 : Reboot Danger -->
+                <div class="glass-dark neon-card rounded-3xl p-6 relative overflow-hidden border border-red-500/20 group">
+                    <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-rose-500"></div>
+                    
+                    <div class="flex justify-between items-start mb-8 relative z-10">
+                        <div class="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/30 text-rose-500 flex items-center justify-center text-2xl shadow-lg relative">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="relative z-10">
+                        <h3 class="font-extrabold text-white text-xl">Hard Reboot</h3>
+                        <p class="text-sm text-slate-400 mb-6 mt-1">Module Radar IMREDD</p>
+                        <button onclick="if(confirm('PROCÉDURE CRITIQUE : Confirmer le redémarrage électrique du Radar ?')) sendCommand('FABLAB_21_22/CMD/radar_imredd', 'RESTART')" 
+                                class="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(225,29,72,0.4)] hover:shadow-[0_0_25px_rgba(225,29,72,0.6)] flex items-center justify-center gap-3">
+                            <i class="fa-solid fa-power-off"></i> FORCER REBOOT
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- SCRIPTS -->
+    <script>
+        // --- 1. TABS & SECURITY ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            const activeClass = 'px-6 py-2.5 rounded-xl text-sm font-bold transition-all bg-white/10 text-white shadow-lg border border-white/5 flex items-center gap-2';
+            const inactiveClass = 'px-6 py-2.5 rounded-xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2';
+            
+            document.getElementById('btn-dashboard').className = tabId === 'dashboard' ? activeClass : inactiveClass;
+            document.getElementById('btn-dashboard').querySelector('i').className = "fa-solid fa-chart-simple " + (tabId === 'dashboard' ? "text-cyan-400" : "text-slate-500");
+            
+            document.getElementById('btn-admin').className = tabId === 'admin' ? activeClass : inactiveClass;
+            document.getElementById('btn-admin').querySelector('i').className = "fa-solid fa-terminal " + (tabId === 'admin' ? "text-rose-400" : "text-slate-500");
+        }
+
+        function verifyAdmin() {
+            // Un petit prompt "hacker style" 
+            const password = prompt("SYS_REQ : INITIALISER ACCÈS ADMIN\nEntrez la clé de sécurité [admin] :");
+            if (password === "admin") { 
+                switchTab('admin'); 
+                // Petite animation sympa
+                document.body.classList.add('animate-pulse');
+                setTimeout(() => document.body.classList.remove('animate-pulse'), 500);
+            } 
+            else if (password !== null) { alert("ERREUR : Accès refusé. Incident loggé."); }
+        }
+
+        // --- 2. CHART.JS CYBERPUNK ---
+        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+        Chart.defaults.color = '#94a3b8'; // text-slate-400
+        
+        let radarChart;
+
+        function initChart() {
+            const ctx = document.getElementById('chartRadar').getContext('2d');
+            
+            // Dégradé néon sous la courbe
+            let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(34, 211, 238, 0.5)'); // Cyan clair
+            gradient.addColorStop(0.5, 'rgba(99, 102, 241, 0.2)'); // Indigo fading
+            gradient.addColorStop(1, 'rgba(15, 23, 42, 0)'); // Fondu au background
+
+            radarChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [], 
+                    datasets: [{
+                        label: 'Indice de Qualité de l\'Air',
+                        data: [], 
+                        borderColor: '#22d3ee', // border-cyan-400
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#0f172a',
+                        pointBorderColor: '#22d3ee',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 8,
+                        pointHoverBackgroundColor: '#fff',
+                        tension: 0.4, // Spline super fluide
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleFont: { size: 13, family: 'Plus Jakarta Sans' },
+                            bodyFont: { size: 15, weight: 'bold', family: 'Plus Jakarta Sans' },
+                            padding: 14, 
+                            cornerRadius: 12, 
+                            displayColors: false,
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: false,
+                            grid: { color: 'rgba(255, 255, 255, 0.05)', borderDash: [5, 5] }, 
+                            border: { display: false } 
+                        },
+                        x: { 
+                            grid: { display: false }, 
+                            border: { display: false } 
+                        }
+                    }
+                }
+            });
+        }
+        initChart(); 
+
+        // --- 3. MQTT CONNECTION (Université) ---
+        const broker = "mqtt.univ-cotedazur.fr";
+        const port = 443;
+        const clientId = "WebConsole_Ultra_" + Math.random().toString(16).slice(2, 8);
+        let mqttClient = new Paho.MQTT.Client(broker, port, "/ws", clientId);
+
+        function updateLedState(isConnected) {
+            const ping = document.getElementById('mqtt-ping');
+            const dot = document.getElementById('mqtt-dot');
+            if(isConnected) {
+                ping.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75";
+                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-cyan-500 shadow-[0_0_10px_rgba(34,211,238,0.8)]";
+            } else {
+                ping.className = "animate-pulse absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75";
+                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.8)]";
+            }
+        }
+
+        function setKpiValue(id, value, formatter = (v) => v) {
+            const el = document.getElementById(id);
+            if (!el) {
+                console.warn(`⚠️ Élément KPI introuvable: ${id}`);
+                return;
+            }
+            el.innerText = formatter(value);
+        }
+
+        const lastLiveUpdateByKpi = {
+            'kpi-temp': 0,
+            'kpi-hum': 0,
+            'kpi-co2': 0,
+            'kpi-max-users': 0
+        };
+
+        const DB_FALLBACK_DELAY_MS = 2 * 60 * 1000;
+        const MAX_DB_DATA_AGE_MS = 10 * 60 * 1000;
+    const CHART_MIN_UPDATE_INTERVAL_MS = 10000; // 10 secondes entre 2 points
+        const CHART_MAX_POINTS = 30;
+        let lastLiveIaqUpdateMs = 0;
+        let lastLiveCo2UpdateMs = 0;
+        let lastLivePm25UpdateMs = 0;
+        let lastChartPointMs = 0;
+        const casierTemps = { 1: null, 2: null };
+
+        function setLiveKpiValue(id, value, formatter = (v) => v) {
+            setKpiValue(id, value, formatter);
+            lastLiveUpdateByKpi[id] = Date.now();
+        }
+
+        function setAirKpi(value, unit, labelText) {
+            const unitEl = document.getElementById('kpi-co2-unit');
+            const labelEl = document.getElementById('kpi-co2-label');
+
+            setLiveKpiValue('kpi-co2', value, (v) => Math.round(Number(v)));
+            if (unitEl) unitEl.innerText = unit;
+            if (labelEl) labelEl.innerText = labelText;
+        }
+
+        function updateCasierTempDisplay() {
+            const el = document.getElementById('kpi-temp-casiers');
+            if (!el) return;
+            const c1 = Number.isFinite(casierTemps[1]) ? `${casierTemps[1].toFixed(1)} °C` : '-- °C';
+            const c2 = Number.isFinite(casierTemps[2]) ? `${casierTemps[2].toFixed(1)} °C` : '-- °C';
+            el.innerText = `C1: ${c1} · C2: ${c2}`;
+        }
+
+        function updateCasierTempsFromObject(obj) {
+            if (!obj || typeof obj !== 'object') return;
+            const casier = Number(obj.num_casier);
+            const temp = Number(obj.tp_en_degc ?? obj.tp_c ?? obj.temperature ?? obj.temp);
+            if ((casier === 1 || casier === 2) && Number.isFinite(temp)) {
+                casierTemps[casier] = temp;
+                updateCasierTempDisplay();
+            }
+        }
+
+        function shouldUseDbFallback(id) {
+            const lastLive = lastLiveUpdateByKpi[id] || 0;
+            return Date.now() - lastLive > DB_FALLBACK_DELAY_MS;
+        }
+
+        function parseSqlDateToMs(sqlDate) {
+            // format attendu: YYYY-MM-DD HH:mm:ss
+            if (!sqlDate) return 0;
+            const iso = String(sqlDate).replace(' ', 'T');
+            const ms = new Date(iso).getTime();
+            return Number.isFinite(ms) ? ms : 0;
+        }
+
+        function isRecentDbPoint(point) {
+            const pointMs = parseSqlDateToMs(point?.created_at);
+            if (!pointMs) return false;
+            return Date.now() - pointMs <= MAX_DB_DATA_AGE_MS;
+        }
+
+        function pushLiveIaqPoint(value, timestampMs) {
+            if (!radarChart || !Number.isFinite(Number(value))) return;
+
+            const when = timestampMs ? new Date(timestampMs) : new Date();
+            const pointMs = when.getTime();
+            if (lastChartPointMs && pointMs - lastChartPointMs < CHART_MIN_UPDATE_INTERVAL_MS) {
+                return;
+            }
+
+            const timeString = `${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}:${String(when.getSeconds()).padStart(2, '0')}`;
+
+            radarChart.data.labels.push(timeString);
+            radarChart.data.datasets[0].data.push(Number(value));
+            if (radarChart.data.labels.length > CHART_MAX_POINTS) {
+                radarChart.data.labels.shift();
+                radarChart.data.datasets[0].data.shift();
+            }
+
+            const data = radarChart.data.datasets[0].data;
+            if (data.length >= 2) {
+                const min = Math.min(...data);
+                const max = Math.max(...data);
+                const range = Math.max(max - min, 0.5);
+                const pad = Math.max(range * 0.15, 0.2);
+                radarChart.options.scales.y.min = min - pad;
+                radarChart.options.scales.y.max = max + pad;
+            }
+
+            radarChart.update();
+            lastChartPointMs = pointMs;
+            lastLiveIaqUpdateMs = Date.now();
+        }
+
+        function normalizeTopic(topic) {
+            return String(topic || "").replace(/\/+/g, '/').toLowerCase();
+        }
+
+        function extractNumericPairsFromBrokenPayload(payload) {
+            // Ex: {"Tp en °C ":20,"State ":,"Indic ":wr} -> { tp_en_degc: 20 }
+            const text = String(payload || "");
+            const pairs = {};
+            const regex = /"([^"]+)"\s*:\s*([^,}\{]*)/g;
+            let match;
+
+            while ((match = regex.exec(text)) !== null) {
+                const rawKey = String(match[1] || "").trim().toLowerCase();
+                const rawValue = String(match[2] || "").trim().replace(/^"|"$/g, "");
+                if (!rawValue) continue;
+
+                const numeric = Number(rawValue);
+                if (!Number.isFinite(numeric)) continue;
+
+                const normalizedKey = rawKey
+                    .replace(/°/g, "deg")
+                    .replace(/\s+/g, "_")
+                    .replace(/[^a-z0-9_]+/g, "");
+
+                if (normalizedKey) {
+                    pairs[normalizedKey] = numeric;
+                }
+            }
+
+            return Object.keys(pairs).length > 0 ? pairs : null;
+        }
+
+        function parsePayloadRobust(payload) {
+            try {
+                let parsed = JSON.parse(payload);
+
+                // Cas fréquent: payload JSON sérialisé en string, ex "{\"pm25\":1}"
+                if (typeof parsed === "string") {
+                    const text = parsed.trim();
+                    if ((text.startsWith('{') && text.endsWith('}')) || (text.startsWith('[') && text.endsWith(']'))) {
+                        try {
+                            parsed = JSON.parse(text);
+                        } catch {
+                            // on garde la string d'origine si reparse impossible
+                        }
+                    }
+                }
+
+                return parsed;
+            } catch {
+                return extractNumericPairsFromBrokenPayload(payload) ?? payload;
+            }
+        }
+
+        function bindMessageHandler(client) {
+            client.onMessageArrived = (message) => {
+            const topic = message.destinationName || message.topic || "unknown";
+            const payload = message.payloadString;
+            console.log("📡 [RX] " + topic, payload);
+
+            const parsed = parsePayloadRobust(payload);
+
+            // Réponse API BDD: { capteur, donnees, statut }
+            if (parsed && parsed.capteur && Array.isArray(parsed.donnees)) {
+                const data = parsed;
+                const capteur = normalizeTopic(data.capteur);
+                const latestPoint = data.donnees[0];
+                const hasRecentData = latestPoint && isRecentDbPoint(latestPoint);
+
+                if (capteur.endsWith("/iaq") && data.statut === "succes") {
+                    // Ne recharge pas du vieux DB si du live IAQ arrive déjà
+                    if (Date.now() - lastLiveIaqUpdateMs > DB_FALLBACK_DELAY_MS) {
+                        processChartData(data.donnees);
+                    }
+                } else if (capteur.includes("/radar/") && capteur.endsWith("/nb") && data.statut === "succes") {
+                    if (shouldUseDbFallback('kpi-max-users')) {
+                        processRadarData(data.donnees);
+                    }
+                } else if ((capteur.endsWith("/temperature") || capteur.endsWith("/tp_en_degc") || capteur.endsWith("/tp_c")) && data.statut === "succes") {
+                    if (shouldUseDbFallback('kpi-temp') && hasRecentData) {
+                        setKpiValue('kpi-temp', latestPoint.value, (v) => Number(v).toFixed(1));
+                    }
+                } else if ((capteur.endsWith("/humidity") || capteur.endsWith("/humidite") || capteur.endsWith("/hum")) && data.statut === "succes") {
+                    if (shouldUseDbFallback('kpi-hum') && hasRecentData) {
+                        setKpiValue('kpi-hum', latestPoint.value, (v) => Number(v).toFixed(1));
+                    }
+                } else if ((capteur.endsWith("/co2_eq") || capteur.endsWith("/co2") || capteur.includes("co2")) && data.statut === "succes") {
+                    if (shouldUseDbFallback('kpi-co2') && hasRecentData) {
+                        setKpiValue('kpi-co2', latestPoint.value, (v) => Math.round(Number(v)));
+                    }
+                } else if ((capteur.endsWith("/pm25") || capteur.includes("pm25")) && data.statut === "succes") {
+                    // fallback PM2.5 uniquement si aucun CO2 live récent
+                    if (Date.now() - lastLiveCo2UpdateMs > DB_FALLBACK_DELAY_MS && hasRecentData) {
+                        const unitEl = document.getElementById('kpi-co2-unit');
+                        const labelEl = document.getElementById('kpi-co2-label');
+                        setKpiValue('kpi-co2', latestPoint.value, (v) => Math.round(Number(v)));
+                        if (unitEl) unitEl.innerText = 'ug/m3';
+                        if (labelEl) labelEl.innerText = 'Source: PM2.5 (fallback)';
+                    }
+                }
+                return;
+            }
+
+            // Flux live stats sismo: {type:"live_stats", timestamp_ms, stats:{avg,...}}
+            if (parsed && parsed.type === "live_stats" && parsed.stats && Number.isFinite(Number(parsed.stats.avg))) {
+                const tMs = parsed.timestamp_ms ? new Date(parsed.timestamp_ms).getTime() : Date.now();
+                pushLiveIaqPoint(Number(parsed.stats.avg), tMs);
+                return;
+            }
+
+            // Flux capteur direct: { temperature, humidity|humidite, co2_eq, iaq, nb, ... }
+            if (typeof parsed === "object" && parsed !== null) {
+                updateCasierTempsFromObject(parsed);
+                const tempValue = parsed.temperature ?? parsed.temp ?? parsed.tp_c ?? parsed.tp_en_degc ?? parsed.tc_c ?? parsed.tc_en_degc;
+                const humValue = parsed.humidity ?? parsed.humidite ?? parsed.hum;
+                const co2Value = parsed.co2_eq ?? parsed.co2 ?? parsed.co2eq ?? parsed.co2Eq ?? parsed.co2_ppm ?? parsed.co2ppm;
+                const pm25Value = parsed.pm25 ?? parsed.pm_25;
+                const iaqValue = parsed.iaq ?? parsed.air_quality ?? parsed.qualite_air ?? parsed.qualiteAir ?? pm25Value;
+                const radarNbValue = parsed.nb ?? parsed.count ?? parsed.person_count;
+
+                if (tempValue !== undefined) {
+                    setLiveKpiValue('kpi-temp', tempValue, (v) => Number(v).toFixed(1));
+                }
+                if (humValue !== undefined) {
+                    setLiveKpiValue('kpi-hum', humValue, (v) => Number(v).toFixed(1));
+                }
+                if (co2Value !== undefined) {
+                    setAirKpi(co2Value, 'ppm', 'Source: CO2 live');
+                    lastLiveCo2UpdateMs = Date.now();
+                } else if (pm25Value !== undefined) {
+                    setAirKpi(pm25Value, 'ug/m3', 'Source: PM2.5 live');
+                    lastLivePm25UpdateMs = Date.now();
+                }
+                if (radarNbValue !== undefined) {
+                    setLiveKpiValue('kpi-max-users', radarNbValue);
+                }
+
+                if (iaqValue !== undefined && radarChart) {
+                    pushLiveIaqPoint(Number(iaqValue), Date.now());
+                }
+            }
+
+            // Flux capteur direct en valeur simple (topic + nombre)
+            const toNumber = (v) => {
+                const n = Number(typeof v === "string" ? v.trim() : v);
+                return Number.isFinite(n) ? n : null;
+            };
+
+            const scalar = toNumber(parsed);
+            if (scalar !== null) {
+                const t = topic.toLowerCase();
+
+                if (t.endsWith("/nb") || t.includes("/radar/")) {
+                    setLiveKpiValue('kpi-max-users', scalar, (v) => Math.round(Number(v)));
+                }
+                if (t.endsWith("/temperature") || t.endsWith("/temp")) {
+                    setLiveKpiValue('kpi-temp', scalar, (v) => Number(v).toFixed(1));
+                }
+                if (t.endsWith("/tp_en_degc") || t.endsWith("/tp_c") || t.endsWith("/tc_en_degc") || t.endsWith("/tc_c")) {
+                    setLiveKpiValue('kpi-temp', scalar, (v) => Number(v).toFixed(1));
+                }
+                if (t.endsWith("/humidity") || t.endsWith("/humidite") || t.endsWith("/hum")) {
+                    setLiveKpiValue('kpi-hum', scalar, (v) => Number(v).toFixed(1));
+                }
+                if (t.endsWith("/co2_eq") || t.endsWith("/co2") || t.endsWith("/co2eq") || t.includes("co2")) {
+                    setAirKpi(scalar, 'ppm', 'Source: CO2 live');
+                    lastLiveCo2UpdateMs = Date.now();
+                }
+                if (t.endsWith("/pm25") || t.includes("pm25")) {
+                    if (Date.now() - lastLiveCo2UpdateMs > 30000) {
+                        setAirKpi(scalar, 'ug/m3', 'Source: PM2.5 live');
+                    }
+                    lastLivePm25UpdateMs = Date.now();
+                }
+                if (t.endsWith("/iaq") || t.endsWith("/pm25") || t.includes("qualite_air") || t.includes("air_quality")) {
+                    pushLiveIaqPoint(Number(scalar), Date.now());
+                }
+            }
+            };
+        }
+
+        function subscribeBaseTopics() {
+            mqttClient.subscribe("FABLAB_21_22/WEB/REPONSE");
+            mqttClient.subscribe("FABLAB_21_22/salle_122/env/#");
+            mqttClient.subscribe("FABLAB_21_22/IMREDD/iot15/radar/#");
+            mqttClient.subscribe("FABLAB_21_22/METEO/#");
+            mqttClient.subscribe("FABLAB_21_22/Distrikase_wifi/#");
+            mqttClient.subscribe("FABLAB_21_22/sismo_fablab/response/#");
+        }
+
+        mqttClient.onConnectionLost = (responseObject) => {
+            updateLedState(false);
+            console.error(`[CRITICAL] Connexion perdue : ${responseObject.errorMessage}`);
+        };
+
+        console.log("🚀 Lancement Serveur Websocket Quantique...");
+        bindMessageHandler(mqttClient);
+        mqttClient.connect({
+            timeout: 4,
+            useSSL: true,
+            userName: "fablab2122",
+            password: "2122",
+            onSuccess: () => {
+                console.log(`✅ Connecté au broker MQTT: Université (${broker}:${port})`);
+                updateLedState(true);
+                subscribeBaseTopics();
+                requestDataFromPython();
+            },
+            onFailure: (msg) => {
+                updateLedState(false);
+                console.error(`❌ Échec connexion Université: ${msg.errorMessage}`);
+            }
+        });
+
+        // --- 4. ENGINE I/O ---
+        function requestDataFromPython() {
+            if (!mqttClient || !mqttClient.isConnected()) {
+                alert("SYSTÈME HORS LIGNE : En attente de reconnexion..."); return;
+            }
+            
+            // Requêtes multiples pour avoir tous les KPIs et le graphique
+            const topics = [
+                "FABLAB_21_22/salle_122/env//iaq",
+                "FABLAB_21_22/IMREDD/iot15/radar/nb",
+                "FABLAB_21_22/salle_122/env//temperature",
+                "FABLAB_21_22/salle_122/env//humidity",
+                "FABLAB_21_22/salle_122/env//co2_eq",
+                "FABLAB_21_22/salle_122/env//pm25",
+                "FABLAB_21_22/Distrikase_wifi/out/tp_en_degc"
+            ];
+            
+            topics.forEach((topic) => {
+                const limit = topic.includes("iaq") ? 15 : 1;
+                const payload = JSON.stringify({ "capteur": topic, "limite": limit });
+                const message = new Paho.MQTT.Message(payload);
+                message.destinationName = "FABLAB_21_22/WEB/REQUETE";
+                mqttClient.send(message);
+            });
+        }
+
+        function processChartData(donnees_sql) {
+            const heures = []; const valeurs = [];
+            
+            // Les données de l'API sont déjà remises dans l'ordre chronologique côté Python
+            donnees_sql.forEach(point => {
+                if (!isRecentDbPoint(point)) return;
+                heures.push(point.created_at.split(' ')[1].slice(0, 5));
+                valeurs.push(point.value);
+            });
+
+            if (valeurs.length === 0) return;
+            
+            // Animation cool de mise à jour
+            radarChart.data.labels = heures;
+            radarChart.data.datasets[0].data = valeurs;
+            radarChart.update();
+        }
+
+        function processRadarData(donnees_sql) {
+             if(donnees_sql.length > 0) {
+                 document.getElementById('kpi-max-users').innerText = donnees_sql[0].value;
+             }
+        }
+
+        function toggleLight(checkbox) {
+            const numValue = checkbox.checked ? 1 : 0;
+            sendCommand('FABLAB_21_22/CMD/lumiere1', '{"relais": ' + numValue + '}');
+        }
+
+        function sendCommand(topic, valeur) {
+            if (!mqttClient || !mqttClient.isConnected()) return alert("ERREUR TX : Broker inaccessible.");
+            const message = new Paho.MQTT.Message(String(valeur));
+            message.destinationName = topic;
+            mqttClient.send(message);
+            console.log(`⚡ [TX] ${topic} >>> ${valeur}`);
+        }
+    </script>
+</body>
+</html>
