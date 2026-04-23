@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Monitoring Ultra | FabLab</title>
+    <title>FabLab Valrose Monitoring | Smart Dashboard</title>
     <!-- Polices Google : Plus Jakarta Sans (très moderne) -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Icônes Professionnelles -->
@@ -38,6 +38,7 @@
     <!-- Librairies : Chart.js et Paho MQTT -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <script src="./config.local.js"></script>
 
     <style>
         body {
@@ -128,8 +129,9 @@
                     </div>
                     <div>
                         <h1 class="text-white font-extrabold tracking-tight text-xl">
-                            IOT<span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400"> Core</span>
+                            FabLab<span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400"> Valrose</span>
                         </h1>
+                        <p class="text-[11px] text-slate-400 font-semibold tracking-wide mt-1">Monitoring Center</p>
                         <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase tracking-[0.2em] font-bold mt-1">
                             Live Feed
                             <span class="relative flex h-2 w-2">
@@ -233,12 +235,12 @@
                     <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl mb-4">
                         <i class="fa-solid fa-mask-ventilator"></i>
                     </div>
-                    <p class="text-xs text-slate-400 uppercase font-extrabold tracking-widest mb-1">CO2 EQ</p>
+                    <p class="text-xs text-slate-400 uppercase font-extrabold tracking-widest mb-1">Lumière</p>
                     <div class="flex items-baseline gap-2 text-amber-400">
-                        <h3 class="text-4xl font-black text-white tracking-tight" id="kpi-co2">--</h3>
-                        <span id="kpi-co2-unit" class="font-bold text-sm ml-1 uppercase tracking-wider">ppm</span>
+                        <h3 class="text-4xl font-black text-white tracking-tight" id="kpi-light">--</h3>
+                        <span id="kpi-light-unit" class="font-bold text-sm ml-1 uppercase tracking-wider">lux</span>
                     </div>
-                    <p id="kpi-co2-label" class="mt-2 text-xs text-slate-400 font-mono">Source: CO2</p>
+                    <p id="kpi-light-label" class="mt-2 text-xs text-slate-400 font-mono">Source: Luxmètre</p>
                 </div>
             </div>
 
@@ -256,13 +258,18 @@
                                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                                     <span class="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
                                 </span>
-                                Qualité de l'Air (IAQ)
+                                Qualité de l'Air (PM)
                             </h3>
-                            <p class="text-sm text-slate-400 mt-1">Évolution de l'indice de qualité de l'air - Salle 122</p>
+                            <p class="text-sm text-slate-400 mt-1">Indice dérivé de PM2.5 / PM10 — FabLab Valrose</p>
                         </div>
-                        <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                            <i class="fa-solid fa-chart-area text-cyan-400 text-xs"></i>
-                            <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Live</span>
+                        <div class="flex flex-col items-end gap-2">
+                            <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                                <i class="fa-solid fa-chart-area text-cyan-400 text-xs"></i>
+                                <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Live</span>
+                            </div>
+                            <div id="aq-status-chip" class="px-3 py-1.5 rounded-lg border text-xs font-bold uppercase tracking-wider bg-slate-800/70 border-slate-600 text-slate-200 shadow-inner">
+                                Qualité Air: --
+                            </div>
                         </div>
                     </div>
                     
@@ -272,24 +279,36 @@
                 </div>
 
                 <!-- Secondary Module -->
-                <div class="glass-dark neon-card rounded-3xl p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                <div class="glass-dark neon-card rounded-3xl p-6 flex flex-col justify-between text-left relative overflow-hidden">
                     <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/20"></div>
                     
-                    <div class="relative z-10">
+                    <div class="relative z-10 w-full">
                         <div class="relative">
                             <div class="w-24 h-24 rounded-full border-2 border-dashed border-slate-600 animate-spin-slow absolute -inset-2"></div>
                             <div class="w-20 h-20 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 text-3xl shadow-xl mx-auto mb-6">
-                                <i class="fa-solid fa-microchip"></i>
+                                <i class="fa-solid fa-rss"></i>
                             </div>
                         </div>
                         
-                        <h3 class="text-white font-bold text-xl mb-3">Module d'Extension</h3>
-                        <p class="text-sm text-slate-400 leading-relaxed mb-6">
-                            Connectez un nouveau capteur IoT (ex: CO2, Luminosité) via MQTT pour le visualiser ici.
+                        <h3 class="text-white font-bold text-xl mb-3">Radar Tracking Live</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed mb-5">
+                            Télémétrie instantanée de la cible principale détectée par le radar.
                         </p>
-                        <button class="px-5 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-sm transition-all shadow">
-                            <i class="fa-solid fa-plus text-xs mr-2"></i> Ajouter Module
-                        </button>
+
+                        <div class="space-y-3">
+                            <div class="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                                <span class="text-xs text-slate-400 uppercase tracking-wider">Cibles détectées</span>
+                                <span id="radar-targets" class="text-white font-extrabold text-lg">--</span>
+                            </div>
+                            <div class="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                                <span class="text-xs text-slate-400 uppercase tracking-wider">Distance C1</span>
+                                <span id="radar-dist" class="text-cyan-300 font-bold">-- cm</span>
+                            </div>
+                            <div class="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                                <span class="text-xs text-slate-400 uppercase tracking-wider">Vitesse C1</span>
+                                <span id="radar-speed" class="text-indigo-300 font-bold">--</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -400,6 +419,8 @@
     <!-- SCRIPTS -->
     <script>
         // --- 1. TABS & SECURITY ---
+        const runtimeConfig = window.SMARTMONITORING_CONFIG || {};
+
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
@@ -415,15 +436,20 @@
         }
 
         function verifyAdmin() {
-            // Un petit prompt "hacker style" 
-            const password = prompt("SYS_REQ : INITIALISER ACCÈS ADMIN\nEntrez la clé de sécurité [admin] :");
-            if (password === "admin") { 
+            const adminAccessKey = runtimeConfig.adminAccessKey || "";
+            if (!adminAccessKey) {
+                alert("Accès admin désactivé : clé non configurée (config.local.js).");
+                return;
+            }
+
+            const enteredKey = prompt("SYS_REQ : INITIALISER ACCÈS ADMIN\nEntrez la clé de sécurité :");
+            if (enteredKey === adminAccessKey) {
                 switchTab('admin'); 
                 // Petite animation sympa
                 document.body.classList.add('animate-pulse');
                 setTimeout(() => document.body.classList.remove('animate-pulse'), 500);
             } 
-            else if (password !== null) { alert("ERREUR : Accès refusé. Incident loggé."); }
+            else if (enteredKey !== null) { alert("ERREUR : Accès refusé. Incident loggé."); }
         }
 
         // --- 2. CHART.JS CYBERPUNK ---
@@ -446,7 +472,7 @@
                 data: {
                     labels: [], 
                     datasets: [{
-                        label: 'Indice de Qualité de l\'Air',
+                        label: 'Indice Qualité Air (PM2.5/PM10)',
                         data: [], 
                         borderColor: '#22d3ee', // border-cyan-400
                         backgroundColor: gradient,
@@ -500,6 +526,8 @@
         // --- 3. MQTT CONNECTION (Université) ---
         const broker = "mqtt.univ-cotedazur.fr";
         const port = 443;
+    const mqttUsername = runtimeConfig.mqttUsername || "";
+    const mqttPassword = runtimeConfig.mqttPassword || "";
         const clientId = "WebConsole_Ultra_" + Math.random().toString(16).slice(2, 8);
         let mqttClient = new Paho.MQTT.Client(broker, port, "/ws", clientId);
 
@@ -527,32 +555,103 @@
         const lastLiveUpdateByKpi = {
             'kpi-temp': 0,
             'kpi-hum': 0,
-            'kpi-co2': 0,
+            'kpi-light': 0,
             'kpi-max-users': 0
         };
 
         const DB_FALLBACK_DELAY_MS = 2 * 60 * 1000;
         const MAX_DB_DATA_AGE_MS = 10 * 60 * 1000;
-    const CHART_MIN_UPDATE_INTERVAL_MS = 10000; // 10 secondes entre 2 points
-        const CHART_MAX_POINTS = 30;
-        let lastLiveIaqUpdateMs = 0;
-        let lastLiveCo2UpdateMs = 0;
-        let lastLivePm25UpdateMs = 0;
+    const CHART_MIN_UPDATE_INTERVAL_MS = 2000; // plus fluide en démo (2s)
+        const CHART_MAX_POINTS = 10;
+    let lastLiveIaqUpdateMs = 0;
+    let lastLiveLightUpdateMs = 0;
+    let lastLivePm25UpdateMs = 0;
+    let lastLivePm10UpdateMs = 0;
         let lastChartPointMs = 0;
         const casierTemps = { 1: null, 2: null };
+    let latestPm25 = null;
+    let latestPm10 = null;
 
         function setLiveKpiValue(id, value, formatter = (v) => v) {
             setKpiValue(id, value, formatter);
             lastLiveUpdateByKpi[id] = Date.now();
         }
 
-        function setAirKpi(value, unit, labelText) {
-            const unitEl = document.getElementById('kpi-co2-unit');
-            const labelEl = document.getElementById('kpi-co2-label');
+        function setLightKpi(value, labelText = 'Source: Luxmètre') {
+            const unitEl = document.getElementById('kpi-light-unit');
+            const labelEl = document.getElementById('kpi-light-label');
 
-            setLiveKpiValue('kpi-co2', value, (v) => Math.round(Number(v)));
-            if (unitEl) unitEl.innerText = unit;
+            setLiveKpiValue('kpi-light', value, (v) => Math.round(Number(v)));
+            if (unitEl) unitEl.innerText = 'lux';
             if (labelEl) labelEl.innerText = labelText;
+            lastLiveLightUpdateMs = Date.now();
+        }
+
+        function computeAirQualityFromPm(pm25, pm10) {
+            const p25 = Number(pm25);
+            const p10 = Number(pm10);
+
+            if (!Number.isFinite(p25) && !Number.isFinite(p10)) return null;
+            if (Number.isFinite(p25) && !Number.isFinite(p10)) {
+                return Math.max(0, Math.min(500, Math.round(p25 * 2.0)));
+            }
+            if (!Number.isFinite(p25) && Number.isFinite(p10)) {
+                return Math.max(0, Math.min(500, Math.round(p10 * 0.8)));
+            }
+
+            // Indice combiné pondéré PM2.5 / PM10
+            const score = (p25 * 2.0) * 0.7 + (p10 * 0.8) * 0.3;
+            return Math.max(0, Math.min(500, Math.round(score)));
+        }
+
+        function updateAirQualityFromPm(pm25, pm10, timestampMs = Date.now()) {
+            const score = computeAirQualityFromPm(pm25, pm10);
+            if (score === null) return;
+            pushLiveIaqPoint(score, timestampMs);
+            updateAirQualityBadge(score);
+        }
+
+        function classifyAirQuality(score) {
+            const s = Number(score);
+            if (!Number.isFinite(s)) {
+                return { label: 'Indisponible', cls: 'bg-slate-800/70 border-slate-600 text-slate-200' };
+            }
+            if (s <= 50) return { label: 'Excellent', cls: 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300' };
+            if (s <= 100) return { label: 'Bon', cls: 'bg-teal-500/15 border-teal-400/40 text-teal-300' };
+            if (s <= 150) return { label: 'Moyen', cls: 'bg-amber-500/15 border-amber-400/40 text-amber-300' };
+            if (s <= 200) return { label: 'Dégradé', cls: 'bg-orange-500/15 border-orange-400/40 text-orange-300' };
+            return { label: 'Critique', cls: 'bg-rose-500/15 border-rose-400/40 text-rose-300' };
+        }
+
+        function updateAirQualityBadge(score) {
+            const chip = document.getElementById('aq-status-chip');
+            if (!chip) return;
+            const { label, cls } = classifyAirQuality(score);
+            chip.className = `px-3 py-1.5 rounded-lg border text-xs font-bold uppercase tracking-wider shadow-inner ${cls}`;
+            chip.innerText = `Qualité Air: ${label} (${Math.round(Number(score))})`;
+        }
+
+        function updateRadarTelemetryFromObject(obj) {
+            if (!obj || typeof obj !== 'object') return;
+
+            const targetsEl = document.getElementById('radar-targets');
+            const distEl = document.getElementById('radar-dist');
+            const speedEl = document.getElementById('radar-speed');
+
+            const nb = obj.nb ?? obj.count ?? obj.person_count;
+            if (targetsEl && Number.isFinite(Number(nb))) {
+                targetsEl.innerText = Math.round(Number(nb));
+            }
+
+            const c1 = obj.c1;
+            if (c1 && typeof c1 === 'object') {
+                if (distEl && Number.isFinite(Number(c1.dist_cm))) {
+                    distEl.innerText = `${Math.round(Number(c1.dist_cm))} cm`;
+                }
+                if (speedEl && Number.isFinite(Number(c1.vitesse))) {
+                    speedEl.innerText = `${Number(c1.vitesse).toFixed(2)} m/s`;
+                }
+            }
         }
 
         function updateCasierTempDisplay() {
@@ -595,8 +694,16 @@
         function pushLiveIaqPoint(value, timestampMs) {
             if (!radarChart || !Number.isFinite(Number(value))) return;
 
-            const when = timestampMs ? new Date(timestampMs) : new Date();
-            const pointMs = when.getTime();
+            let when = timestampMs ? new Date(timestampMs) : new Date();
+            let pointMs = when.getTime();
+
+            // Si la source DB renvoie souvent le même timestamp, on force un temps courant
+            // pour conserver une animation fluide de type "stream".
+            if (lastChartPointMs && pointMs <= lastChartPointMs) {
+                when = new Date();
+                pointMs = when.getTime();
+            }
+
             if (lastChartPointMs && pointMs - lastChartPointMs < CHART_MIN_UPDATE_INTERVAL_MS) {
                 return;
             }
@@ -703,6 +810,9 @@
                     if (shouldUseDbFallback('kpi-max-users')) {
                         processRadarData(data.donnees);
                     }
+                    if (latestPoint && Number.isFinite(Number(latestPoint.value))) {
+                        updateRadarTelemetryFromObject({ nb: Number(latestPoint.value) });
+                    }
                 } else if ((capteur.endsWith("/temperature") || capteur.endsWith("/tp_en_degc") || capteur.endsWith("/tp_c")) && data.statut === "succes") {
                     if (shouldUseDbFallback('kpi-temp') && hasRecentData) {
                         setKpiValue('kpi-temp', latestPoint.value, (v) => Number(v).toFixed(1));
@@ -711,38 +821,45 @@
                     if (shouldUseDbFallback('kpi-hum') && hasRecentData) {
                         setKpiValue('kpi-hum', latestPoint.value, (v) => Number(v).toFixed(1));
                     }
-                } else if ((capteur.endsWith("/co2_eq") || capteur.endsWith("/co2") || capteur.includes("co2")) && data.statut === "succes") {
-                    if (shouldUseDbFallback('kpi-co2') && hasRecentData) {
-                        setKpiValue('kpi-co2', latestPoint.value, (v) => Math.round(Number(v)));
+                } else if ((capteur.endsWith("/lux") || capteur.includes("/lumiere/")) && data.statut === "succes") {
+                    if (shouldUseDbFallback('kpi-light') && hasRecentData) {
+                        setKpiValue('kpi-light', latestPoint.value, (v) => Math.round(Number(v)));
                     }
                 } else if ((capteur.endsWith("/pm25") || capteur.includes("pm25")) && data.statut === "succes") {
-                    // fallback PM2.5 uniquement si aucun CO2 live récent
-                    if (Date.now() - lastLiveCo2UpdateMs > DB_FALLBACK_DELAY_MS && hasRecentData) {
-                        const unitEl = document.getElementById('kpi-co2-unit');
-                        const labelEl = document.getElementById('kpi-co2-label');
-                        setKpiValue('kpi-co2', latestPoint.value, (v) => Math.round(Number(v)));
-                        if (unitEl) unitEl.innerText = 'ug/m3';
-                        if (labelEl) labelEl.innerText = 'Source: PM2.5 (fallback)';
+                    if (hasRecentData) {
+                        latestPm25 = Number(latestPoint.value);
+                        if (Date.now() - lastLivePm25UpdateMs > DB_FALLBACK_DELAY_MS) {
+                            updateAirQualityFromPm(latestPm25, latestPm10, Date.now());
+                        }
+                    }
+                } else if ((capteur.endsWith("/pm10") || capteur.includes("pm10")) && data.statut === "succes") {
+                    if (hasRecentData) {
+                        latestPm10 = Number(latestPoint.value);
+                        if (Date.now() - lastLivePm10UpdateMs > DB_FALLBACK_DELAY_MS) {
+                            updateAirQualityFromPm(latestPm25, latestPm10, Date.now());
+                        }
                     }
                 }
                 return;
             }
 
-            // Flux live stats sismo: {type:"live_stats", timestamp_ms, stats:{avg,...}}
+            // Flux live stats sismo: fallback visuel si PM indisponible
             if (parsed && parsed.type === "live_stats" && parsed.stats && Number.isFinite(Number(parsed.stats.avg))) {
                 const tMs = parsed.timestamp_ms ? new Date(parsed.timestamp_ms).getTime() : Date.now();
-                pushLiveIaqPoint(Number(parsed.stats.avg), tMs);
+                if (latestPm25 === null && latestPm10 === null) {
+                    pushLiveIaqPoint(Number(parsed.stats.avg), tMs);
+                }
                 return;
             }
 
-            // Flux capteur direct: { temperature, humidity|humidite, co2_eq, iaq, nb, ... }
+            // Flux capteur direct: { temperature, humidity|humidite, pm25, pm10, lux, nb, ... }
             if (typeof parsed === "object" && parsed !== null) {
                 updateCasierTempsFromObject(parsed);
                 const tempValue = parsed.temperature ?? parsed.temp ?? parsed.tp_c ?? parsed.tp_en_degc ?? parsed.tc_c ?? parsed.tc_en_degc;
                 const humValue = parsed.humidity ?? parsed.humidite ?? parsed.hum;
-                const co2Value = parsed.co2_eq ?? parsed.co2 ?? parsed.co2eq ?? parsed.co2Eq ?? parsed.co2_ppm ?? parsed.co2ppm;
                 const pm25Value = parsed.pm25 ?? parsed.pm_25;
-                const iaqValue = parsed.iaq ?? parsed.air_quality ?? parsed.qualite_air ?? parsed.qualiteAir ?? pm25Value;
+                const pm10Value = parsed.pm10 ?? parsed.pm_10;
+                const luxValue = parsed.lux ?? parsed.luminosite ?? parsed.light ?? parsed.illuminance;
                 const radarNbValue = parsed.nb ?? parsed.count ?? parsed.person_count;
 
                 if (tempValue !== undefined) {
@@ -751,19 +868,26 @@
                 if (humValue !== undefined) {
                     setLiveKpiValue('kpi-hum', humValue, (v) => Number(v).toFixed(1));
                 }
-                if (co2Value !== undefined) {
-                    setAirKpi(co2Value, 'ppm', 'Source: CO2 live');
-                    lastLiveCo2UpdateMs = Date.now();
-                } else if (pm25Value !== undefined) {
-                    setAirKpi(pm25Value, 'ug/m3', 'Source: PM2.5 live');
+                if (luxValue !== undefined) {
+                    setLightKpi(luxValue, 'Source: Lux live');
+                }
+
+                if (pm25Value !== undefined) {
+                    latestPm25 = Number(pm25Value);
                     lastLivePm25UpdateMs = Date.now();
+                }
+                if (pm10Value !== undefined) {
+                    latestPm10 = Number(pm10Value);
+                    lastLivePm10UpdateMs = Date.now();
                 }
                 if (radarNbValue !== undefined) {
                     setLiveKpiValue('kpi-max-users', radarNbValue);
                 }
 
-                if (iaqValue !== undefined && radarChart) {
-                    pushLiveIaqPoint(Number(iaqValue), Date.now());
+                updateRadarTelemetryFromObject(parsed);
+
+                if ((pm25Value !== undefined || pm10Value !== undefined) && radarChart) {
+                    updateAirQualityFromPm(latestPm25, latestPm10, Date.now());
                 }
             }
 
@@ -779,6 +903,7 @@
 
                 if (t.endsWith("/nb") || t.includes("/radar/")) {
                     setLiveKpiValue('kpi-max-users', scalar, (v) => Math.round(Number(v)));
+                    updateRadarTelemetryFromObject({ nb: scalar });
                 }
                 if (t.endsWith("/temperature") || t.endsWith("/temp")) {
                     setLiveKpiValue('kpi-temp', scalar, (v) => Number(v).toFixed(1));
@@ -789,18 +914,23 @@
                 if (t.endsWith("/humidity") || t.endsWith("/humidite") || t.endsWith("/hum")) {
                     setLiveKpiValue('kpi-hum', scalar, (v) => Number(v).toFixed(1));
                 }
-                if (t.endsWith("/co2_eq") || t.endsWith("/co2") || t.endsWith("/co2eq") || t.includes("co2")) {
-                    setAirKpi(scalar, 'ppm', 'Source: CO2 live');
-                    lastLiveCo2UpdateMs = Date.now();
+                if (t.endsWith("/lux") || t.includes("/lumiere/") || t.includes("luminosite")) {
+                    setLightKpi(scalar, 'Source: Lux live');
                 }
                 if (t.endsWith("/pm25") || t.includes("pm25")) {
-                    if (Date.now() - lastLiveCo2UpdateMs > 30000) {
-                        setAirKpi(scalar, 'ug/m3', 'Source: PM2.5 live');
-                    }
+                    latestPm25 = Number(scalar);
                     lastLivePm25UpdateMs = Date.now();
+                    updateAirQualityFromPm(latestPm25, latestPm10, Date.now());
                 }
-                if (t.endsWith("/iaq") || t.endsWith("/pm25") || t.includes("qualite_air") || t.includes("air_quality")) {
-                    pushLiveIaqPoint(Number(scalar), Date.now());
+                if (t.endsWith("/pm10") || t.includes("pm10")) {
+                    latestPm10 = Number(scalar);
+                    lastLivePm10UpdateMs = Date.now();
+                    updateAirQualityFromPm(latestPm25, latestPm10, Date.now());
+                }
+                if (t.endsWith("/iaq") || t.includes("qualite_air") || t.includes("air_quality")) {
+                    if (latestPm25 === null && latestPm10 === null) {
+                        pushLiveIaqPoint(Number(scalar), Date.now());
+                    }
                 }
             }
             };
@@ -808,11 +938,17 @@
 
         function subscribeBaseTopics() {
             mqttClient.subscribe("FABLAB_21_22/WEB/REPONSE");
+            // Flux agrégé principal (source unique équipe)
+            mqttClient.subscribe("FABLAB_21_22/salle12/all");
             mqttClient.subscribe("FABLAB_21_22/salle_122/env/#");
             mqttClient.subscribe("FABLAB_21_22/IMREDD/iot15/radar/#");
             mqttClient.subscribe("FABLAB_21_22/METEO/#");
             mqttClient.subscribe("FABLAB_21_22/Distrikase_wifi/#");
             mqttClient.subscribe("FABLAB_21_22/sismo_fablab/response/#");
+            // Topics alternatifs utilisés par d'autres collègues
+            mqttClient.subscribe("FABLAB_21_22/envir/salle12/#");
+            mqttClient.subscribe("FABLAB_21_22/RADAR/salle12/#");
+            mqttClient.subscribe("FABLAB_21_22/lumiere/salle12/#");
         }
 
         mqttClient.onConnectionLost = (responseObject) => {
@@ -825,8 +961,8 @@
         mqttClient.connect({
             timeout: 4,
             useSSL: true,
-            userName: "fablab2122",
-            password: "2122",
+            userName: mqttUsername,
+            password: mqttPassword,
             onSuccess: () => {
                 console.log(`✅ Connecté au broker MQTT: Université (${broker}:${port})`);
                 updateLedState(true);
@@ -845,14 +981,17 @@
                 alert("SYSTÈME HORS LIGNE : En attente de reconnexion..."); return;
             }
             
-            // Requêtes multiples pour avoir tous les KPIs et le graphique
+            // Requêtes principales depuis le topic agrégé /all
             const topics = [
-                "FABLAB_21_22/salle_122/env//iaq",
+                "FABLAB_21_22/salle12/all/temperature",
+                "FABLAB_21_22/salle12/all/humidite",
+                "FABLAB_21_22/salle12/all/pm25",
+                "FABLAB_21_22/salle12/all/pm10",
+                "FABLAB_21_22/salle12/all/lux",
+
+                // Radar reste séparé tant qu'il n'est pas publié dans /all
                 "FABLAB_21_22/IMREDD/iot15/radar/nb",
-                "FABLAB_21_22/salle_122/env//temperature",
-                "FABLAB_21_22/salle_122/env//humidity",
-                "FABLAB_21_22/salle_122/env//co2_eq",
-                "FABLAB_21_22/salle_122/env//pm25",
+                "FABLAB_21_22/RADAR/salle12/nb",
                 "FABLAB_21_22/Distrikase_wifi/out/tp_en_degc"
             ];
             
@@ -876,18 +1015,30 @@
             });
 
             if (valeurs.length === 0) return;
+
+            // Fenêtre glissante: on garde uniquement les N dernières valeurs
+            const clippedLabels = heures.slice(-CHART_MAX_POINTS);
+            const clippedValues = valeurs.slice(-CHART_MAX_POINTS);
             
             // Animation cool de mise à jour
-            radarChart.data.labels = heures;
-            radarChart.data.datasets[0].data = valeurs;
+            radarChart.data.labels = clippedLabels;
+            radarChart.data.datasets[0].data = clippedValues;
             radarChart.update();
+
+            // Maintient le curseur temporel sur le dernier point affiché
+            lastChartPointMs = Date.now();
         }
 
         function processRadarData(donnees_sql) {
              if(donnees_sql.length > 0) {
-                 document.getElementById('kpi-max-users').innerText = donnees_sql[0].value;
+                 const nb = Number(donnees_sql[0].value);
+                 document.getElementById('kpi-max-users').innerText = nb;
+                 updateRadarTelemetryFromObject({ nb });
              }
         }
+
+        // Etat initial visuel
+        updateAirQualityBadge(null);
 
         function toggleLight(checkbox) {
             const numValue = checkbox.checked ? 1 : 0;

@@ -1,0 +1,31 @@
+services:
+  # 1. Le Broker MQTT (Eclipse Mosquitto)
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: iot_mosquitto
+    ports:
+      - "1883:1883" # Port standard MQTT
+      - "9001:9001" # Port pour les WebSockets (utile pour le site web)
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    restart: unless-stopped
+
+  # 2. La Base de données (MySQL)
+  mysql:
+    image: mysql:8.0
+    container_name: iot_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-fablab_monitoring}
+      MYSQL_USER: ${MYSQL_USER:-fablab_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306" # Port standard MySQL
+    volumes:
+      - mysql_data:/var/lib/mysql           # Volume Docker nommé (plus robuste cross-runtime)
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

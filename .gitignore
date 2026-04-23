@@ -3,8 +3,9 @@ bridge/__pycache__/
 bridge/venv/
 embedded/.pio/
 web_interface/node_modules/
-docker-compose.yml
+web_interface/public/config.local.js
 mysql_data/
+mysql_data_backup_*/
 mosquitto/data/
 mosquitto/log/
 .env

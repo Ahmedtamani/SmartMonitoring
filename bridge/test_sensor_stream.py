@@ -1,11 +1,12 @@
 import json
+import os
 import time
 import paho.mqtt.client as mqtt
 
-MQTT_BROKER = "mqtt.univ-cotedazur.fr"
-MQTT_PORT = 443
-MQTT_USER = "fablab2122"
-MQTT_PASS = "2122"
+MQTT_BROKER = os.getenv("MQTT_BROKER", "mqtt.univ-cotedazur.fr")
+MQTT_PORT = int(os.getenv("MQTT_PORT", "443"))
+MQTT_USER = os.getenv("MQTT_USER", "")
+MQTT_PASS = os.getenv("MQTT_PASS", "")
 TOPIC = "FABLAB_21_22/#"
 MAX_MESSAGES = 8
 TIMEOUT_SECONDS = 20
@@ -37,7 +38,8 @@ if __name__ == "__main__":
     client = mqtt.Client(transport="websockets")
     client.ws_set_options(path="/ws", headers=None)
     client.tls_set()
-    client.username_pw_set(MQTT_USER, MQTT_PASS)
+    if MQTT_USER:
+        client.username_pw_set(MQTT_USER, MQTT_PASS)
     client.on_connect = on_connect
     client.on_message = on_message
 

@@ -8,15 +8,15 @@ import paho.mqtt.client as mqtt
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", "mqtt.univ-cotedazur.fr")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "443"))
-MQTT_USER = os.getenv("MQTT_USER", "fablab2122")
-MQTT_PASS = os.getenv("MQTT_PASS", "2122")
+MQTT_USER = os.getenv("MQTT_USER", "")
+MQTT_PASS = os.getenv("MQTT_PASS", "")
 
 TOPIC_REQUETE = os.getenv("TOPIC_REQUETE", "FABLAB_21_22/WEB/REQUETE")
 TOPIC_REPONSE = os.getenv("TOPIC_REPONSE", "FABLAB_21_22/WEB/REPONSE")
 
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
 DB_USER = os.getenv("DB_USER", "fablab_user")
-DB_PASS = os.getenv("DB_PASS", "fablab_password")
+DB_PASS = os.getenv("DB_PASS", "")
 DB_NAME = os.getenv("DB_NAME", "fablab_monitoring")
 
 
@@ -124,7 +124,8 @@ if __name__ == "__main__":
     client = mqtt.Client(transport="websockets")
     client.ws_set_options(path="/ws", headers=None)
     client.tls_set()
-    client.username_pw_set(MQTT_USER, MQTT_PASS)
+    if MQTT_USER:
+        client.username_pw_set(MQTT_USER, MQTT_PASS)
     client.on_connect = on_connect
     client.on_message = on_message
 

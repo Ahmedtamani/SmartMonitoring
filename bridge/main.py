@@ -17,19 +17,51 @@ import paho.mqtt.client as mqtt
 # MQTT
 MQTT_BROKER = os.getenv("MQTT_BROKER", "mqtt.univ-cotedazur.fr")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "443"))
-MQTT_USER = os.getenv("MQTT_USER", "fablab2122")
-MQTT_PASS = os.getenv("MQTT_PASS", "2122")
+MQTT_USER = os.getenv("MQTT_USER", "")
+MQTT_PASS = os.getenv("MQTT_PASS", "")
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "FABLAB_21_22/#")
 
 # MySQL
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
 DB_USER = os.getenv("DB_USER", "fablab_user")
-DB_PASS = os.getenv("DB_PASS", "fablab_password")
+DB_PASS = os.getenv("DB_PASS", "")
 DB_NAME = os.getenv("DB_NAME", "fablab_monitoring")
 
 # Throttling par topic
 SAVE_INTERVAL_SECONDS = max(0, int(os.getenv("SAVE_INTERVAL_SECONDS", "60")))
 last_saved_time = {}
+
+
+def ensure_db_schema():
+    """Crée la table `sensor_data` si elle n'existe pas."""
+    try:
+        conn = mysql.connector.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASS,
+            database=DB_NAME,
+        )
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sensor_data (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                topic VARCHAR(255) NOT NULL,
+                value DOUBLE NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_topic_created_at (topic, created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """
+        )
+        conn.commit()
+        print("🧱 Schéma DB prêt (table sensor_data).")
+    except mysql.connector.Error as err:
+        print(f"❌ Erreur init schéma MySQL : {err}")
+        raise
+    finally:
+        if "conn" in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
 
 
 def on_connect(client, userdata, flags, rc):
@@ -185,10 +217,13 @@ def on_message(client, userdata, msg):
 if __name__ == "__main__":
     print("🚀 Démarrage du bridge MQTT -> MySQL...")
 
+    ensure_db_schema()
+
     client = mqtt.Client(transport="websockets")
     client.ws_set_options(path="/ws", headers=None)
     client.tls_set()
-    client.username_pw_set(MQTT_USER, MQTT_PASS)
+    if MQTT_USER:
+        client.username_pw_set(MQTT_USER, MQTT_PASS)
 
     client.on_connect = on_connect
     client.on_message = on_message
