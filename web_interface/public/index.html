@@ -1,1057 +1,951 @@
 <!DOCTYPE html>
-<html lang="fr" class="antialiased dark">
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FabLab Valrose Monitoring | Smart Dashboard</title>
-    <!-- Polices Google : Plus Jakarta Sans (très moderne) -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Icônes Professionnelles -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Tailwind CSS avec Configuration Personnalisée -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
-                    animation: {
-                        'blob': 'blob 7s infinite',
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'spin-slow': 'spin 8s linear infinite',
-                    },
-                    keyframes: {
-                        blob: {
-                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <!-- Librairies : Chart.js et Paho MQTT -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-    <script src="./config.local.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FabLab Valrose | Monitoring Public</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f2f6fb;
+      --paper: #ffffff;
+      --paper-2: #f7fbff;
+      --ink: #0f172a;
+      --muted: #5a6b84;
+      --brand: #0f4c81;
+      --brand-2: #2c7ecf;
+      --accent: #00a2ff;
+      --line: rgba(15, 76, 129, 0.14);
+      --ok: #16a34a;
+      --warn: #d97706;
+      --bad: #dc2626;
+      --shadow: 0 20px 50px rgba(15, 76, 129, 0.14);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+    }
 
-    <style>
-        body {
-            background-color: #030712; /* Très sombre, très pro */
-            color: #f8fafc;
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--ink);
+      min-height: 100vh;
+      background:
+        radial-gradient(1100px 600px at 100% -10%, rgba(44,126,207,.28), transparent 60%),
+        radial-gradient(900px 500px at -10% 10%, rgba(15,76,129,.18), transparent 55%),
+        linear-gradient(135deg, #f0f4fb 0%, #f9fbff 100%);
+      overflow-x: hidden;
+    }
+
+    .ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(0px);
+      opacity: .55;
+      mix-blend-mode: multiply;
+      animation: drift 18s ease-in-out infinite;
+    }
+
+    .orb.one { width: 320px; height: 320px; background: radial-gradient(circle, rgba(44,126,207,.45), transparent 65%); top: -80px; right: -80px; }
+    .orb.two { width: 260px; height: 260px; background: radial-gradient(circle, rgba(0,162,255,.35), transparent 70%); bottom: 6%; left: -60px; animation-delay: -4s; }
+    .orb.three { width: 200px; height: 200px; background: radial-gradient(circle, rgba(16,185,129,.3), transparent 70%); top: 30%; right: 10%; animation-delay: -7s; }
+
+    @keyframes drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(10px, -12px) scale(1.05); }
+    }
+
+    .shell {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 22px 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 18px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 12px;
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 800;
+      letter-spacing: .05em;
+      background: linear-gradient(140deg, var(--brand), var(--brand-2));
+      box-shadow: 0 14px 24px rgba(44, 126, 207, 0.35);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.08rem;
+      font-weight: 800;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      font-size: .78rem;
+      color: var(--muted);
+    }
+
+    .status-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--paper-2);
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 10px;
+      <!DOCTYPE html>
+      <html lang="fr">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>FabLab Valrose | Monitoring Public</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+        <style>
+          :root {
+            --bg: #eef3fb;
+            --paper: rgba(255, 255, 255, 0.78);
+            --paper-solid: #ffffff;
+            --ink: #0b2239;
+            --muted: #5b6b82;
+            --brand: #164d9d;
+            --brand-2: #6a11cb;
+            --accent: #06b6d4;
+            --line: rgba(15, 76, 129, 0.18);
+            --ok: #16a34a;
+            --warn: #f59e0b;
+            --bad: #ef4444;
+            --shadow: 0 30px 70px rgba(15, 76, 129, 0.18);
+            --radius-lg: 28px;
+            --radius-md: 18px;
+          }
+
+          * { box-sizing: border-box; }
+          html, body { margin: 0; }
+          body {
+            font-family: 'Inter', sans-serif;
+            color: var(--ink);
+            min-height: 100vh;
+            background:
+              radial-gradient(1000px 500px at 100% -10%, rgba(106,17,203,.2), transparent 60%),
+              radial-gradient(900px 520px at -10% 10%, rgba(22,77,157,.2), transparent 55%),
+              linear-gradient(135deg, #edf2fb 0%, #f8fbff 100%);
             overflow-x: hidden;
-        }
+          }
 
-        /* Glassmorphism Dark Mode */
-        .glass-dark {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-        }
-        
-        .glass-nav-dark {
-            background: rgba(3, 7, 18, 0.8);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
+          #particle-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+          }
 
-        .tab-content { display: none; opacity: 0; transform: translateY(15px); transition: all 0.4s ease; }
-        .tab-content.active { display: block; opacity: 1; transform: translateY(0); animation: slideInFade 0.5s ease-out forwards; }
-        
-        @keyframes slideInFade {
-            0% { opacity: 0; transform: translateY(20px) scale(0.98); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
+          .shell {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 24px 22px 50px;
+            position: relative;
+            z-index: 1;
+          }
 
-        /* Effet Wow de carte au survol - Glow border & Lift */
-        .neon-card {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .neon-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(99, 102, 241, 0.3);
-            box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.15), inset 0 0 20px rgba(99, 102, 241, 0.05);
-        }
+          .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 14px 18px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(14px);
+            position: sticky;
+            top: 12px;
+            z-index: 20;
+          }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+          .brand {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+          }
 
-        /* Fancy Toggle iOS/Cyberpunk style */
-        .toggle-checkbox:checked { right: 0; border-color: #10B981; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #10B981; box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
-        
-        .bg-grid-pattern {
-            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
-                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 30px 30px;
-        }
+          .logo {
+            width: 52px;
+            height: 52px;
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            color: #fff;
+            font-weight: 800;
+            letter-spacing: .05em;
+            background: linear-gradient(140deg, var(--brand), var(--brand-2));
+            box-shadow: 0 14px 30px rgba(22, 77, 157, 0.35);
+          }
 
-        /* Effet gradient mesh en arrière plan */
-        .gradient-bg {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: -1; overflow: hidden; pointer-events: none;
-        }
-        .blob-1 { position: absolute; top: -10%; left: -10%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(56,189,248,0.15) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; filter: blur(40px); }
-        .blob-2 { position: absolute; bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(99,102,241,0.1) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; filter: blur(60px); }
-        .blob-3 { position: absolute; top: 40%; left: 40%; width: 40vw; height: 40vw; background: radial-gradient(circle, rgba(168,85,247,0.08) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; filter: blur(50px); }
-    </style>
-</head>
-<body class="bg-grid-pattern selection:bg-indigo-500/30">
+          .brand h1 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 800;
+          }
 
-    <!-- ARRIÈRE PLAN ANIME -->
-    <div class="gradient-bg">
-        <div class="blob-1 animate-blob"></div>
-        <div class="blob-2 animate-blob" style="animation-delay: 2s"></div>
-        <div class="blob-3 animate-blob" style="animation-delay: 4s"></div>
-    </div>
+          .brand p {
+            margin: 2px 0 0;
+            font-size: .8rem;
+            color: var(--muted);
+          }
 
-    <!-- NAVBAR ULTRA PREMIUM -->
-    <nav class="glass-nav-dark sticky top-0 z-50 transition-all duration-300">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8">
-            <div class="flex items-center justify-between h-20">
-                
-                <!-- Logo -->
-                <div class="flex items-center gap-4 group cursor-default">
-                    <div class="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
-                        <div class="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <i class="fa-solid fa-satellite-dish text-2xl font-light"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-white font-extrabold tracking-tight text-xl">
-                            FabLab<span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400"> Valrose</span>
-                        </h1>
-                        <p class="text-[11px] text-slate-400 font-semibold tracking-wide mt-1">Monitoring Center</p>
-                        <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase tracking-[0.2em] font-bold mt-1">
-                            Live Feed
-                            <span class="relative flex h-2 w-2">
-                                <span id="mqtt-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span id="mqtt-dot" class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Onglets -->
-                <div class="flex items-center gap-1 p-1.5 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
-                    <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all bg-white/10 text-white shadow-lg border border-white/5 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-simple text-cyan-400"></i> Metrics
-                    </button>
-                    <button onclick="verifyAdmin()" id="btn-admin" class="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2">
-                        <i class="fa-solid fa-terminal text-rose-400"></i> Console
-                    </button>
-                </div>
+          .status-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.7);
+            font-size: .8rem;
+            color: var(--muted);
+          }
+
+          .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--ok);
+            box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4);
+            animation: pulse 2s infinite;
+          }
+
+          @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+            70% { box-shadow: 0 0 0 12px rgba(22, 163, 74, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+          }
+
+          .hero {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1.3fr 0.7fr;
+            gap: 18px;
+          }
+
+          .glass {
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: var(--paper);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(18px);
+            padding: 26px;
+            position: relative;
+            overflow: hidden;
+          }
+
+          .glass::after {
+            content: '';
+            position: absolute;
+            top: -40px;
+            right: -60px;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(6,182,212,.25), transparent 70%);
+          }
+
+          .hero-caption {
+            display: inline-flex;
+            gap: 10px;
+            font-size: .75rem;
+            text-transform: uppercase;
+            letter-spacing: .14em;
+            font-weight: 700;
+            color: #12345b;
+          }
+
+          .hero-caption span {
+            background: rgba(22, 77, 157, 0.12);
+            border: 1px solid rgba(22, 77, 157, 0.2);
+            padding: 6px 10px;
+            border-radius: 999px;
+          }
+
+          .hero h2 {
+            margin: 14px 0 10px;
+            font-family: 'Source Serif 4', serif;
+            font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+            color: #0b2943;
+          }
+
+          .hero p {
+            margin: 0 0 16px;
+            color: var(--muted);
+            line-height: 1.7;
+          }
+
+          .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+          }
+
+          .btn {
+            border: 0;
+            text-decoration: none;
+            cursor: pointer;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: .92rem;
+            font-weight: 700;
+            transition: transform .18s ease, box-shadow .18s ease;
+          }
+
+          .btn:hover { transform: translateY(-2px); }
+
+          .btn-primary {
+            color: white;
+            background: linear-gradient(135deg, var(--brand), var(--brand-2));
+            box-shadow: 0 14px 26px rgba(106, 17, 203, 0.25);
+          }
+
+          .btn-secondary {
+            color: var(--brand);
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(22, 77, 157, 0.2);
+          }
+
+          .summary {
+            display: grid;
+            gap: 12px;
+          }
+
+          .summary-card {
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.75);
+            padding: 16px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(18px);
+          }
+
+          .summary-title {
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .14em;
+            color: var(--muted);
+            font-weight: 700;
+            margin-bottom: 8px;
+          }
+
+          .summary-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #0b2943;
+          }
+
+          .summary-meta {
+            font-size: .8rem;
+            color: var(--muted);
+          }
+
+          .selector {
+            margin-top: 24px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+          }
+
+          .selector button {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(22, 77, 157, 0.2);
+            color: var(--brand);
+            padding: 10px 16px;
+            border-radius: 999px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .2s ease;
+          }
+
+          .selector button.active {
+            color: #fff;
+            background: linear-gradient(135deg, var(--brand), var(--brand-2));
+            box-shadow: 0 12px 24px rgba(22, 77, 157, 0.2);
+          }
+
+          .panels {
+            margin-top: 18px;
+            display: grid;
+            gap: 18px;
+          }
+
+          .panel {
+            display: none;
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            backdrop-filter: blur(18px);
+            animation: dropIn .4s ease;
+          }
+
+          .panel.active { display: block; }
+
+          @keyframes dropIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+
+          .panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+          }
+
+          .panel-title {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #0b2943;
+          }
+
+          .panel-sub {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: .85rem;
+          }
+
+          .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+          }
+
+          .metric-card {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(22, 77, 157, 0.15);
+            padding: 14px;
+            display: grid;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+          }
+
+          .metric-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(22,77,157,.12), transparent 60%);
+            opacity: 0;
+            transition: opacity .3s ease;
+          }
+
+          .metric-card:hover::before { opacity: 1; }
+
+          .metric-label {
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--muted);
+            font-weight: 700;
+          }
+
+          .metric-value {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #0b2943;
+          }
+
+          .metric-value.updated { animation: pop .5s ease; }
+
+          @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+          }
+
+          .metric-unit { font-size: .8rem; color: var(--muted); }
+
+          .sparkline {
+            width: 100%;
+            height: 70px;
+          }
+
+          .sparkline canvas {
+            width: 100%;
+            height: 70px;
+          }
+
+          .skeleton {
+            position: relative;
+            overflow: hidden;
+            color: transparent !important;
+          }
+
+          .skeleton::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(230,236,245,0.1), rgba(230,236,245,0.7), rgba(230,236,245,0.1));
+            animation: shimmer 1.4s infinite;
+          }
+
+          @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+
+          .locked {
+            min-height: 120px;
+            display: grid;
+            gap: 6px;
+            align-content: center;
+            color: var(--muted);
+            font-size: .85rem;
+          }
+
+          .overview-chart {
+            width: 100%;
+            height: 130px;
+          }
+
+          .footer {
+            margin-top: 26px;
+            text-align: center;
+            color: var(--muted);
+            font-size: .82rem;
+          }
+
+          @media (max-width: 980px) {
+            .hero { grid-template-columns: 1fr; }
+          }
+        </style>
+      </head>
+      <body>
+        <canvas id="particle-canvas"></canvas>
+        <main class="shell">
+          <header class="topbar">
+            <div class="brand">
+              <div class="logo">FV</div>
+              <div>
+                <h1>FabLab Valrose · Observatoire intelligent</h1>
+                <p>Université Côte d’Azur · Visualisation publique immersive</p>
+              </div>
             </div>
-        </div>
-    </nav>
+            <div class="status-chip">
+              <span class="dot"></span>
+              <span id="sync-state">Synchronisation en cours...</span>
+            </div>
+          </header>
 
-    <!-- MAIN CONTENT -->
-    <main class="max-w-7xl mx-auto py-10 px-6 lg:px-8 relative z-10">
-        
-        <!-- ======================= -->
-        <!-- DASHBOARD (Metrics)     -->
-        <!-- ======================= -->
-        <div id="dashboard" class="tab-content active space-y-8">
-            
-            <!-- HEADER APP -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-4 border-b border-white/5">
+          <section class="hero">
+            <article class="glass">
+              <div class="hero-caption">
+                <span>SmartMonitoring</span>
+                <span>FabLab Valrose</span>
+              </div>
+              <h2>Visualisez l’activité environnementale des salles en un regard.</h2>
+              <p>
+                Cette interface met en scène les indicateurs publics du FabLab : température, humidité, lumière, CO₂ et
+                qualité d’air. Sélectionnez une salle pour dérouler ses données détaillées et ses courbes 24h.
+              </p>
+              <div class="hero-actions">
+                <button id="refresh-btn" class="btn btn-primary">Actualiser</button>
+                <a href="/admin.html" class="btn btn-secondary">Espace administrateur</a>
+              </div>
+            </article>
+            <aside class="summary">
+              <div class="summary-card">
+                <div class="summary-title">Statut global</div>
+                <div class="summary-value" id="summary-state">En attente</div>
+                <div class="summary-meta">Dernière mise à jour · <span id="updated-at">--</span></div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-title">Qualité air salle 2</div>
+                <div class="summary-value" id="summary-air">--</div>
+                <div class="summary-meta" id="summary-air-label">Indisponible</div>
+              </div>
+            </aside>
+          </section>
+
+          <section class="selector">
+            <button class="active" data-target="overview">Vue générale</button>
+            <button data-target="salle1">Salle 1</button>
+            <button data-target="salle2">Salle 2</button>
+          </section>
+
+          <section class="panels">
+            <article class="panel active" id="panel-overview">
+              <div class="panel-head">
                 <div>
-                    <h2 class="text-3xl font-extrabold text-white flex items-center gap-3">
-                        Vue d'Ensemble <span class="bg-indigo-500/20 text-indigo-300 text-xs px-3 py-1 rounded-full border border-indigo-500/30 uppercase tracking-widest">En direct</span>
-                    </h2>
-                    <p class="text-slate-400 font-medium mt-2">Monitorez instantanément l'état de votre flotte de capteurs.</p>
+                  <h3 class="panel-title">Vue générale · Synthèse</h3>
+                  <p class="panel-sub">Aperçu rapide des indicateurs clés des deux salles.</p>
                 </div>
-                <!-- Bouton Sync Glow -->
-                <button onclick="requestDataFromPython()" class="relative group px-6 py-3 rounded-xl font-bold text-sm text-white bg-slate-800 border border-slate-700 hover:border-cyan-500/50 transition-all overflow-hidden flex items-center gap-3 shadow-lg">
-                    <div class="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <i class="fa-solid fa-rotate-right group-hover:rotate-180 transition-transform duration-700 ease-in-out text-cyan-400"></i>
-                    <span class="relative z-10">Sync Data</span>
-                </button>
-            </div>
-            
-            <!-- KPI GRID -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-                <!-- KPI 1 -->
-                <div class="glass-dark neon-card rounded-3xl p-6 relative">
-                    <div class="absolute top-0 right-0 p-6 opacity-20">
-                        <i class="fa-solid fa-users text-4xl text-cyan-400"></i>
-                    </div>
-                    <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl mb-4">
-                        <i class="fa-solid fa-person-shelter"></i>
-                    </div>
-                    <p class="text-xs text-slate-400 uppercase font-extrabold tracking-widest mb-1">Capteur Radar</p>
-                    <div class="flex items-baseline gap-2">
-                        <h3 class="text-4xl font-black text-white tracking-tight" id="kpi-max-users">--</h3>
-                        <span class="text-cyan-400 font-medium text-sm">pax</span>
-                    </div>
+              </div>
+              <div class="grid">
+                <div class="metric-card">
+                  <div class="metric-label">Température moyenne</div>
+                  <div class="metric-value"><span id="avg-temp" data-skeleton>--</span><span class="metric-unit">°C</span></div>
+                  <div class="sparkline"><canvas id="chart-overview"></canvas></div>
                 </div>
-
-                <!-- KPI 2 -->
-                <div class="glass-dark neon-card rounded-3xl p-6 relative">
-                    <div class="absolute top-0 right-0 p-6 opacity-20">
-                        <i class="fa-solid fa-temperature-full text-4xl text-rose-400"></i>
-                    </div>
-                    <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-xl mb-4">
-                        <i class="fa-solid fa-fire"></i>
-                    </div>
-                    <p class="text-xs text-slate-400 uppercase font-extrabold tracking-widest mb-1">Température</p>
-                    <div class="flex items-baseline gap-2">
-                        <h3 class="text-4xl font-black text-white tracking-tight" id="kpi-temp">--</h3>
-                        <span class="text-rose-400 font-medium text-sm">°C</span>
-                    </div>
-                    <p id="kpi-temp-casiers" class="mt-2 text-xs text-slate-400 font-mono">C1: -- °C · C2: -- °C</p>
+                <div class="metric-card">
+                  <div class="metric-label">Salle 1 · Lumière</div>
+                  <div class="metric-value"><span id="overview-s1-light" data-skeleton>--</span><span class="metric-unit">lux</span></div>
+                  <div class="sparkline"><canvas id="chart-s1-light"></canvas></div>
                 </div>
-
-                <!-- KPI 3 -->
-                <div class="glass-dark neon-card rounded-3xl p-6 relative">
-                    <div class="absolute top-0 right-0 p-6 opacity-20">
-                        <i class="fa-solid fa-droplet text-4xl text-blue-400"></i>
-                    </div>
-                    <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-xl mb-4">
-                        <i class="fa-solid fa-cloud-rain"></i>
-                    </div>
-                    <p class="text-xs text-slate-400 uppercase font-extrabold tracking-widest mb-1">Humidité</p>
-                    <div class="flex items-baseline gap-2">
-                        <h3 class="text-4xl font-black text-white tracking-tight" id="kpi-hum">--</h3>
-                        <span class="text-blue-400 font-medium text-sm">%</span>
-                    </div>
+                <div class="metric-card">
+                  <div class="metric-label">Salle 2 · CO₂</div>
+                  <div class="metric-value"><span id="overview-s2-co2" data-skeleton>--</span><span class="metric-unit">ppm</span></div>
+                  <div class="sparkline"><canvas id="chart-s2-co2"></canvas></div>
                 </div>
+              </div>
+            </article>
 
-                <!-- KPI 4 -->
-                <div class="glass-dark neon-card rounded-3xl p-6 relative">
-                    <div class="absolute top-0 right-0 p-6 opacity-20">
-                        <i class="fa-solid fa-wind text-4xl text-amber-400"></i>
-                    </div>
-                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl mb-4">
-                        <i class="fa-solid fa-mask-ventilator"></i>
-                    </div>
-                    <p class="text-xs text-slate-400 uppercase font-extrabold tracking-widest mb-1">Lumière</p>
-                    <div class="flex items-baseline gap-2 text-amber-400">
-                        <h3 class="text-4xl font-black text-white tracking-tight" id="kpi-light">--</h3>
-                        <span id="kpi-light-unit" class="font-bold text-sm ml-1 uppercase tracking-wider">lux</span>
-                    </div>
-                    <p id="kpi-light-label" class="mt-2 text-xs text-slate-400 font-mono">Source: Luxmètre</p>
+            <article class="panel" id="panel-salle1">
+              <div class="panel-head">
+                <div>
+                  <h3 class="panel-title">Salle 1 · Capteurs essentiels</h3>
+                  <p class="panel-sub">Message 1 : température, humidité, lumière. Message 2 : caméra IA (privée).</p>
                 </div>
-            </div>
-
-            <!-- CHARTS AREA -->
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <!-- Main Chart -->
-                <div class="xl:col-span-2 glass-dark neon-card rounded-3xl p-6 relative overflow-hidden group">
-                    <!-- Glow effect behind chart -->
-                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-indigo-500/10 rounded-full blur-[80px] pointer-events-none"></div>
-
-                    <div class="flex justify-between items-center mb-8 relative z-10">
-                        <div>
-                            <h3 class="font-bold text-white text-xl flex items-center gap-3">
-                                <span class="relative flex h-3 w-3">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
-                                </span>
-                                Qualité de l'Air (PM)
-                            </h3>
-                            <p class="text-sm text-slate-400 mt-1">Indice dérivé de PM2.5 / PM10 — FabLab Valrose</p>
-                        </div>
-                        <div class="flex flex-col items-end gap-2">
-                            <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                                <i class="fa-solid fa-chart-area text-cyan-400 text-xs"></i>
-                                <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Live</span>
-                            </div>
-                            <div id="aq-status-chip" class="px-3 py-1.5 rounded-lg border text-xs font-bold uppercase tracking-wider bg-slate-800/70 border-slate-600 text-slate-200 shadow-inner">
-                                Qualité Air: --
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="relative h-[350px] w-full z-10">
-                        <canvas id="chartRadar"></canvas>
-                    </div>
+              </div>
+              <div class="grid">
+                <div class="metric-card">
+                  <div class="metric-label">Température</div>
+                  <div class="metric-value"><span id="s1-temp" data-skeleton>--</span><span class="metric-unit">°C</span></div>
+                  <div class="sparkline"><canvas id="chart-s1-temp"></canvas></div>
                 </div>
-
-                <!-- Secondary Module -->
-                <div class="glass-dark neon-card rounded-3xl p-6 flex flex-col justify-between text-left relative overflow-hidden">
-                    <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/20"></div>
-                    
-                    <div class="relative z-10 w-full">
-                        <div class="relative">
-                            <div class="w-24 h-24 rounded-full border-2 border-dashed border-slate-600 animate-spin-slow absolute -inset-2"></div>
-                            <div class="w-20 h-20 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 text-3xl shadow-xl mx-auto mb-6">
-                                <i class="fa-solid fa-rss"></i>
-                            </div>
-                        </div>
-                        
-                        <h3 class="text-white font-bold text-xl mb-3">Radar Tracking Live</h3>
-                        <p class="text-sm text-slate-400 leading-relaxed mb-5">
-                            Télémétrie instantanée de la cible principale détectée par le radar.
-                        </p>
-
-                        <div class="space-y-3">
-                            <div class="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
-                                <span class="text-xs text-slate-400 uppercase tracking-wider">Cibles détectées</span>
-                                <span id="radar-targets" class="text-white font-extrabold text-lg">--</span>
-                            </div>
-                            <div class="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
-                                <span class="text-xs text-slate-400 uppercase tracking-wider">Distance C1</span>
-                                <span id="radar-dist" class="text-cyan-300 font-bold">-- cm</span>
-                            </div>
-                            <div class="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
-                                <span class="text-xs text-slate-400 uppercase tracking-wider">Vitesse C1</span>
-                                <span id="radar-speed" class="text-indigo-300 font-bold">--</span>
-                            </div>
-                        </div>
-                    </div>
+                <div class="metric-card">
+                  <div class="metric-label">Humidité</div>
+                  <div class="metric-value"><span id="s1-hum" data-skeleton>--</span><span class="metric-unit">%</span></div>
+                  <div class="sparkline"><canvas id="chart-s1-hum"></canvas></div>
                 </div>
-            </div>
-        </div>
-
-        <!-- ======================= -->
-        <!-- ADMIN (Console)         -->
-        <!-- ======================= -->
-        <div id="admin" class="tab-content space-y-8">
-            
-            <!-- ADMIN BANNER -->
-            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-rose-900/90 to-red-900/40 border border-rose-500/30 p-8 shadow-[0_0_40px_rgba(225,29,72,0.15)] flex justify-between items-center">
-                <!-- Background Pattern -->
-                <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-                
-                <div class="relative z-10">
-                    <h2 class="text-3xl font-black text-white flex items-center gap-4 mb-2 tracking-tight">
-                        <span class="p-2 bg-red-500/20 rounded-xl border border-red-500/50">
-                            <i class="fa-solid fa-shield-halved text-rose-400"></i>
-                        </span>
-                        Terminal de Commande
-                    </h2>
-                    <p class="text-rose-200/80 font-medium">Contrôle direct du hardware. Toute action est immédiate.</p>
+                <div class="metric-card">
+                  <div class="metric-label">Lumière</div>
+                  <div class="metric-value"><span id="s1-light" data-skeleton>--</span><span class="metric-unit">lux</span></div>
+                  <div class="sparkline"><canvas id="chart-s1-light-room"></canvas></div>
                 </div>
-                <div class="relative z-10 hidden md:block">
-                    <div class="flex flex-col items-end">
-                        <div class="text-rose-400 text-xs font-mono mb-1">SECURITY CLEARANCE</div>
-                        <div class="bg-black/40 border border-rose-500/30 px-4 py-2 rounded-lg font-mono text-rose-300 font-bold tracking-widest shadow-inner">
-                            LEVEL: ROOT
-                        </div>
-                    </div>
+                <div class="metric-card locked">
+                  <strong>Caméra IA privée</strong>
+                  <span>Visible dans l’espace admin sécurisé.</span>
                 </div>
-            </div>
+              </div>
+            </article>
 
-            <!-- ACTIONS GRID -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                
-                <!-- Action 1 : Toggle Lumière -->
-                <div class="glass-dark neon-card rounded-3xl p-6 relative overflow-hidden group">
-                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-yellow-500/10 rounded-full blur-2xl group-hover:bg-yellow-500/20 transition-all"></div>
-                    
-                    <div class="flex justify-between items-start mb-8 relative z-10">
-                        <div class="w-14 h-14 rounded-2xl bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 flex items-center justify-center text-2xl shadow-lg">
-                            <i class="fa-solid fa-lightbulb"></i>
-                        </div>
-                        <!-- Custom Toggle -->
-                        <div class="relative inline-block w-14 mr-2 align-middle select-none">
-                            <input type="checkbox" id="toggle-light" onclick="toggleLight(this)" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 border-slate-700 appearance-none cursor-pointer z-10 transition-all duration-300 origin-center"/>
-                            <label for="toggle-light" class="toggle-label block overflow-hidden h-7 rounded-full bg-slate-800 border border-slate-700 cursor-pointer transition-colors duration-300 shadow-inner"></label>
-                        </div>
-                    </div>
-                    <div class="relative z-10">
-                        <h3 class="font-extrabold text-white text-xl">Éclairage Principal</h3>
-                        <p class="text-sm text-slate-400 mb-4 mt-1">Atelier FabLab Salle 12</p>
-                        <div class="inline-flex items-center gap-2 bg-black/40 border border-white/5 rounded-lg px-3 py-1.5">
-                            <i class="fa-solid fa-network-wired text-[10px] text-slate-500"></i>
-                            <span class="text-[10px] font-mono text-slate-400 tracking-widest">CMD/lumiere1</span>
-                        </div>
-                    </div>
+            <article class="panel" id="panel-salle2">
+              <div class="panel-head">
+                <div>
+                  <h3 class="panel-title">Salle 2 · Air &amp; capteurs avancés</h3>
+                  <p class="panel-sub">Message 1 : air, température, humidité, CO₂, lumière. Message 2 : radar + IR privé.</p>
                 </div>
-
-                <!-- Action 2 : Porte -->
-                <div class="glass-dark neon-card rounded-3xl p-6 relative overflow-hidden group">
-                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
-                    
-                    <div class="flex justify-between items-start mb-8 relative z-10">
-                        <div class="w-14 h-14 rounded-2xl bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 flex items-center justify-center text-2xl shadow-lg">
-                            <i class="fa-solid fa-door-open"></i>
-                        </div>
-                    </div>
-                    <div class="relative z-10">
-                        <h3 class="font-extrabold text-white text-xl">Serrure Magnétique</h3>
-                        <p class="text-sm text-slate-400 mb-6 mt-1">Porte d'entrée principale</p>
-                        <button onclick="sendCommand('FABLAB_21_22/CMD/porte', 'OPEN')" class="w-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 font-bold py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-3">
-                            <i class="fa-solid fa-unlock-keyhole"></i> Déverrouiller (3s)
-                        </button>
-                    </div>
+              </div>
+              <div class="grid">
+                <div class="metric-card">
+                  <div class="metric-label">Température</div>
+                  <div class="metric-value"><span id="s2-temp" data-skeleton>--</span><span class="metric-unit">°C</span></div>
+                  <div class="sparkline"><canvas id="chart-s2-temp"></canvas></div>
                 </div>
-
-                <!-- Action 3 : Reboot Danger -->
-                <div class="glass-dark neon-card rounded-3xl p-6 relative overflow-hidden border border-red-500/20 group">
-                    <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-rose-500"></div>
-                    
-                    <div class="flex justify-between items-start mb-8 relative z-10">
-                        <div class="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/30 text-rose-500 flex items-center justify-center text-2xl shadow-lg relative">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            <span class="absolute -top-1 -right-1 flex h-3 w-3">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="relative z-10">
-                        <h3 class="font-extrabold text-white text-xl">Hard Reboot</h3>
-                        <p class="text-sm text-slate-400 mb-6 mt-1">Module Radar IMREDD</p>
-                        <button onclick="if(confirm('PROCÉDURE CRITIQUE : Confirmer le redémarrage électrique du Radar ?')) sendCommand('FABLAB_21_22/CMD/radar_imredd', 'RESTART')" 
-                                class="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(225,29,72,0.4)] hover:shadow-[0_0_25px_rgba(225,29,72,0.6)] flex items-center justify-center gap-3">
-                            <i class="fa-solid fa-power-off"></i> FORCER REBOOT
-                        </button>
-                    </div>
+                <div class="metric-card">
+                  <div class="metric-label">Humidité</div>
+                  <div class="metric-value"><span id="s2-hum" data-skeleton>--</span><span class="metric-unit">%</span></div>
+                  <div class="sparkline"><canvas id="chart-s2-hum"></canvas></div>
                 </div>
+                <div class="metric-card">
+                  <div class="metric-label">Lumière</div>
+                  <div class="metric-value"><span id="s2-light" data-skeleton>--</span><span class="metric-unit">lux</span></div>
+                  <div class="sparkline"><canvas id="chart-s2-light"></canvas></div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">CO₂</div>
+                  <div class="metric-value"><span id="s2-co2" data-skeleton>--</span><span class="metric-unit">ppm</span></div>
+                  <div class="sparkline"><canvas id="chart-s2-co2-room"></canvas></div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Qualité de l’air</div>
+                  <div class="metric-value"><span id="s2-air" data-skeleton>--</span><span class="metric-unit">/500</span></div>
+                  <div class="sparkline"><canvas id="chart-s2-air"></canvas></div>
+                </div>
+                <div class="metric-card locked">
+                  <strong>Radar + caméra infrarouge</strong>
+                  <span>Visible dans l’espace admin sécurisé.</span>
+                </div>
+              </div>
+            </article>
+          </section>
 
-            </div>
-        </div>
+          <footer class="footer">
+            Dernière mise à jour : <strong id="updated-at-footer">--</strong> · FabLab Valrose / Université Côte d’Azur
+          </footer>
+        </main>
 
-    </main>
+        <script>
+          const syncStateEl = document.getElementById('sync-state');
+          const updatedAtEl = document.getElementById('updated-at');
+          const updatedAtFooterEl = document.getElementById('updated-at-footer');
+          const refreshBtn = document.getElementById('refresh-btn');
+          const summaryStateEl = document.getElementById('summary-state');
+          const summaryAirEl = document.getElementById('summary-air');
+          const summaryAirLabelEl = document.getElementById('summary-air-label');
 
-    <!-- SCRIPTS -->
-    <script>
-        // --- 1. TABS & SECURITY ---
-        const runtimeConfig = window.SMARTMONITORING_CONFIG || {};
+          const selectorButtons = document.querySelectorAll('.selector button');
+          const panels = {
+            overview: document.getElementById('panel-overview'),
+            salle1: document.getElementById('panel-salle1'),
+            salle2: document.getElementById('panel-salle2')
+          };
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            
-            const activeClass = 'px-6 py-2.5 rounded-xl text-sm font-bold transition-all bg-white/10 text-white shadow-lg border border-white/5 flex items-center gap-2';
-            const inactiveClass = 'px-6 py-2.5 rounded-xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2';
-            
-            document.getElementById('btn-dashboard').className = tabId === 'dashboard' ? activeClass : inactiveClass;
-            document.getElementById('btn-dashboard').querySelector('i').className = "fa-solid fa-chart-simple " + (tabId === 'dashboard' ? "text-cyan-400" : "text-slate-500");
-            
-            document.getElementById('btn-admin').className = tabId === 'admin' ? activeClass : inactiveClass;
-            document.getElementById('btn-admin').querySelector('i').className = "fa-solid fa-terminal " + (tabId === 'admin' ? "text-rose-400" : "text-slate-500");
-        }
+          const previousValues = new Map();
 
-        function verifyAdmin() {
-            const adminAccessKey = runtimeConfig.adminAccessKey || "";
-            if (!adminAccessKey) {
-                alert("Accès admin désactivé : clé non configurée (config.local.js).");
-                return;
-            }
-
-            const enteredKey = prompt("SYS_REQ : INITIALISER ACCÈS ADMIN\nEntrez la clé de sécurité :");
-            if (enteredKey === adminAccessKey) {
-                switchTab('admin'); 
-                // Petite animation sympa
-                document.body.classList.add('animate-pulse');
-                setTimeout(() => document.body.classList.remove('animate-pulse'), 500);
-            } 
-            else if (enteredKey !== null) { alert("ERREUR : Accès refusé. Incident loggé."); }
-        }
-
-        // --- 2. CHART.JS CYBERPUNK ---
-        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
-        Chart.defaults.color = '#94a3b8'; // text-slate-400
-        
-        let radarChart;
-
-        function initChart() {
-            const ctx = document.getElementById('chartRadar').getContext('2d');
-            
-            // Dégradé néon sous la courbe
-            let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(34, 211, 238, 0.5)'); // Cyan clair
-            gradient.addColorStop(0.5, 'rgba(99, 102, 241, 0.2)'); // Indigo fading
-            gradient.addColorStop(1, 'rgba(15, 23, 42, 0)'); // Fondu au background
-
-            radarChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [], 
-                    datasets: [{
-                        label: 'Indice Qualité Air (PM2.5/PM10)',
-                        data: [], 
-                        borderColor: '#22d3ee', // border-cyan-400
-                        backgroundColor: gradient,
-                        borderWidth: 3,
-                        pointBackgroundColor: '#0f172a',
-                        pointBorderColor: '#22d3ee',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 8,
-                        pointHoverBackgroundColor: '#fff',
-                        tension: 0.4, // Spline super fluide
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                            titleFont: { size: 13, family: 'Plus Jakarta Sans' },
-                            bodyFont: { size: 15, weight: 'bold', family: 'Plus Jakarta Sans' },
-                            padding: 14, 
-                            cornerRadius: 12, 
-                            displayColors: false,
-                            borderColor: 'rgba(255,255,255,0.1)',
-                            borderWidth: 1
-                        }
-                    },
-                    scales: {
-                        y: { 
-                            beginAtZero: false,
-                            grid: { color: 'rgba(255, 255, 255, 0.05)', borderDash: [5, 5] }, 
-                            border: { display: false } 
-                        },
-                        x: { 
-                            grid: { display: false }, 
-                            border: { display: false } 
-                        }
-                    }
-                }
+          function setLoadingState(isLoading) {
+            document.querySelectorAll('[data-skeleton]').forEach((el) => {
+              el.classList.toggle('skeleton', isLoading);
             });
-        }
-        initChart(); 
+          }
 
-        // --- 3. MQTT CONNECTION (Université) ---
-        const broker = "mqtt.univ-cotedazur.fr";
-        const port = 443;
-    const mqttUsername = runtimeConfig.mqttUsername || "";
-    const mqttPassword = runtimeConfig.mqttPassword || "";
-        const clientId = "WebConsole_Ultra_" + Math.random().toString(16).slice(2, 8);
-        let mqttClient = new Paho.MQTT.Client(broker, port, "/ws", clientId);
+          function formatDate(value) {
+            if (!value) return '--';
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '--' : date.toLocaleString('fr-FR');
+          }
 
-        function updateLedState(isConnected) {
-            const ping = document.getElementById('mqtt-ping');
-            const dot = document.getElementById('mqtt-dot');
-            if(isConnected) {
-                ping.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75";
-                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-cyan-500 shadow-[0_0_10px_rgba(34,211,238,0.8)]";
-            } else {
-                ping.className = "animate-pulse absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75";
-                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.8)]";
-            }
-        }
-
-        function setKpiValue(id, value, formatter = (v) => v) {
-            const el = document.getElementById(id);
-            if (!el) {
-                console.warn(`⚠️ Élément KPI introuvable: ${id}`);
-                return;
-            }
-            el.innerText = formatter(value);
-        }
-
-        const lastLiveUpdateByKpi = {
-            'kpi-temp': 0,
-            'kpi-hum': 0,
-            'kpi-light': 0,
-            'kpi-max-users': 0
-        };
-
-        const DB_FALLBACK_DELAY_MS = 2 * 60 * 1000;
-        const MAX_DB_DATA_AGE_MS = 10 * 60 * 1000;
-    const CHART_MIN_UPDATE_INTERVAL_MS = 2000; // plus fluide en démo (2s)
-        const CHART_MAX_POINTS = 10;
-    let lastLiveIaqUpdateMs = 0;
-    let lastLiveLightUpdateMs = 0;
-    let lastLivePm25UpdateMs = 0;
-    let lastLivePm10UpdateMs = 0;
-        let lastChartPointMs = 0;
-        const casierTemps = { 1: null, 2: null };
-    let latestPm25 = null;
-    let latestPm10 = null;
-
-        function setLiveKpiValue(id, value, formatter = (v) => v) {
-            setKpiValue(id, value, formatter);
-            lastLiveUpdateByKpi[id] = Date.now();
-        }
-
-        function setLightKpi(value, labelText = 'Source: Luxmètre') {
-            const unitEl = document.getElementById('kpi-light-unit');
-            const labelEl = document.getElementById('kpi-light-label');
-
-            setLiveKpiValue('kpi-light', value, (v) => Math.round(Number(v)));
-            if (unitEl) unitEl.innerText = 'lux';
-            if (labelEl) labelEl.innerText = labelText;
-            lastLiveLightUpdateMs = Date.now();
-        }
-
-        function computeAirQualityFromPm(pm25, pm10) {
-            const p25 = Number(pm25);
-            const p10 = Number(pm10);
-
-            if (!Number.isFinite(p25) && !Number.isFinite(p10)) return null;
-            if (Number.isFinite(p25) && !Number.isFinite(p10)) {
-                return Math.max(0, Math.min(500, Math.round(p25 * 2.0)));
-            }
-            if (!Number.isFinite(p25) && Number.isFinite(p10)) {
-                return Math.max(0, Math.min(500, Math.round(p10 * 0.8)));
-            }
-
-            // Indice combiné pondéré PM2.5 / PM10
-            const score = (p25 * 2.0) * 0.7 + (p10 * 0.8) * 0.3;
-            return Math.max(0, Math.min(500, Math.round(score)));
-        }
-
-        function updateAirQualityFromPm(pm25, pm10, timestampMs = Date.now()) {
-            const score = computeAirQualityFromPm(pm25, pm10);
-            if (score === null) return;
-            pushLiveIaqPoint(score, timestampMs);
-            updateAirQualityBadge(score);
-        }
-
-        function classifyAirQuality(score) {
-            const s = Number(score);
-            if (!Number.isFinite(s)) {
-                return { label: 'Indisponible', cls: 'bg-slate-800/70 border-slate-600 text-slate-200' };
-            }
-            if (s <= 50) return { label: 'Excellent', cls: 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300' };
-            if (s <= 100) return { label: 'Bon', cls: 'bg-teal-500/15 border-teal-400/40 text-teal-300' };
-            if (s <= 150) return { label: 'Moyen', cls: 'bg-amber-500/15 border-amber-400/40 text-amber-300' };
-            if (s <= 200) return { label: 'Dégradé', cls: 'bg-orange-500/15 border-orange-400/40 text-orange-300' };
-            return { label: 'Critique', cls: 'bg-rose-500/15 border-rose-400/40 text-rose-300' };
-        }
-
-        function updateAirQualityBadge(score) {
-            const chip = document.getElementById('aq-status-chip');
-            if (!chip) return;
-            const { label, cls } = classifyAirQuality(score);
-            chip.className = `px-3 py-1.5 rounded-lg border text-xs font-bold uppercase tracking-wider shadow-inner ${cls}`;
-            chip.innerText = `Qualité Air: ${label} (${Math.round(Number(score))})`;
-        }
-
-        function updateRadarTelemetryFromObject(obj) {
-            if (!obj || typeof obj !== 'object') return;
-
-            const targetsEl = document.getElementById('radar-targets');
-            const distEl = document.getElementById('radar-dist');
-            const speedEl = document.getElementById('radar-speed');
-
-            const nb = obj.nb ?? obj.count ?? obj.person_count;
-            if (targetsEl && Number.isFinite(Number(nb))) {
-                targetsEl.innerText = Math.round(Number(nb));
-            }
-
-            const c1 = obj.c1;
-            if (c1 && typeof c1 === 'object') {
-                if (distEl && Number.isFinite(Number(c1.dist_cm))) {
-                    distEl.innerText = `${Math.round(Number(c1.dist_cm))} cm`;
-                }
-                if (speedEl && Number.isFinite(Number(c1.vitesse))) {
-                    speedEl.innerText = `${Number(c1.vitesse).toFixed(2)} m/s`;
-                }
-            }
-        }
-
-        function updateCasierTempDisplay() {
-            const el = document.getElementById('kpi-temp-casiers');
+          function animateValue(el, next, digits = 1) {
             if (!el) return;
-            const c1 = Number.isFinite(casierTemps[1]) ? `${casierTemps[1].toFixed(1)} °C` : '-- °C';
-            const c2 = Number.isFinite(casierTemps[2]) ? `${casierTemps[2].toFixed(1)} °C` : '-- °C';
-            el.innerText = `C1: ${c1} · C2: ${c2}`;
-        }
-
-        function updateCasierTempsFromObject(obj) {
-            if (!obj || typeof obj !== 'object') return;
-            const casier = Number(obj.num_casier);
-            const temp = Number(obj.tp_en_degc ?? obj.tp_c ?? obj.temperature ?? obj.temp);
-            if ((casier === 1 || casier === 2) && Number.isFinite(temp)) {
-                casierTemps[casier] = temp;
-                updateCasierTempDisplay();
-            }
-        }
-
-        function shouldUseDbFallback(id) {
-            const lastLive = lastLiveUpdateByKpi[id] || 0;
-            return Date.now() - lastLive > DB_FALLBACK_DELAY_MS;
-        }
-
-        function parseSqlDateToMs(sqlDate) {
-            // format attendu: YYYY-MM-DD HH:mm:ss
-            if (!sqlDate) return 0;
-            const iso = String(sqlDate).replace(' ', 'T');
-            const ms = new Date(iso).getTime();
-            return Number.isFinite(ms) ? ms : 0;
-        }
-
-        function isRecentDbPoint(point) {
-            const pointMs = parseSqlDateToMs(point?.created_at);
-            if (!pointMs) return false;
-            return Date.now() - pointMs <= MAX_DB_DATA_AGE_MS;
-        }
-
-        function pushLiveIaqPoint(value, timestampMs) {
-            if (!radarChart || !Number.isFinite(Number(value))) return;
-
-            let when = timestampMs ? new Date(timestampMs) : new Date();
-            let pointMs = when.getTime();
-
-            // Si la source DB renvoie souvent le même timestamp, on force un temps courant
-            // pour conserver une animation fluide de type "stream".
-            if (lastChartPointMs && pointMs <= lastChartPointMs) {
-                when = new Date();
-                pointMs = when.getTime();
+            const target = Number(next);
+            if (!Number.isFinite(target)) {
+              el.textContent = '--';
+              return;
             }
 
-            if (lastChartPointMs && pointMs - lastChartPointMs < CHART_MIN_UPDATE_INTERVAL_MS) {
-                return;
+            const current = previousValues.get(el) ?? target;
+            const start = Number.isFinite(current) ? current : target;
+            const diff = target - start;
+            const startTime = performance.now();
+            const duration = 500;
+
+            function step(now) {
+              const progress = Math.min(1, (now - startTime) / duration);
+              const value = start + diff * progress;
+              el.textContent = value.toFixed(digits);
+              if (progress < 1) {
+                requestAnimationFrame(step);
+              } else {
+                previousValues.set(el, target);
+                el.classList.remove('updated');
+                void el.offsetWidth;
+                el.classList.add('updated');
+              }
             }
 
-            const timeString = `${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}:${String(when.getSeconds()).padStart(2, '0')}`;
+            requestAnimationFrame(step);
+          }
 
-            radarChart.data.labels.push(timeString);
-            radarChart.data.datasets[0].data.push(Number(value));
-            if (radarChart.data.labels.length > CHART_MAX_POINTS) {
-                radarChart.data.labels.shift();
-                radarChart.data.datasets[0].data.shift();
+          function switchPanel(name) {
+            Object.values(panels).forEach((panel) => panel.classList.remove('active'));
+            selectorButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.target === name));
+            panels[name]?.classList.add('active');
+          }
+
+          selectorButtons.forEach((btn) => {
+            btn.addEventListener('click', () => switchPanel(btn.dataset.target));
+          });
+
+          function drawSparkline(canvasId, series, color = '#1d4ed8') {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const width = canvas.clientWidth || 240;
+            const height = canvas.clientHeight || 70;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, width, height);
+
+            if (!series?.length) {
+              ctx.strokeStyle = 'rgba(148,163,184,0.4)';
+              ctx.beginPath();
+              ctx.moveTo(0, height * 0.6);
+              ctx.lineTo(width, height * 0.6);
+              ctx.stroke();
+              return;
             }
 
-            const data = radarChart.data.datasets[0].data;
-            if (data.length >= 2) {
-                const min = Math.min(...data);
-                const max = Math.max(...data);
-                const range = Math.max(max - min, 0.5);
-                const pad = Math.max(range * 0.15, 0.2);
-                radarChart.options.scales.y.min = min - pad;
-                radarChart.options.scales.y.max = max + pad;
-            }
+            const values = series.map((point) => Number(point.v)).filter(Number.isFinite);
+            if (!values.length) return;
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const range = max - min || 1;
 
-            radarChart.update();
-            lastChartPointMs = pointMs;
-            lastLiveIaqUpdateMs = Date.now();
-        }
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            values.forEach((value, index) => {
+              const x = (index / (values.length - 1 || 1)) * (width - 4) + 2;
+              const y = height - ((value - min) / range) * (height - 12) - 6;
+              if (index === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+          }
 
-        function normalizeTopic(topic) {
-            return String(topic || "").replace(/\/+/g, '/').toLowerCase();
-        }
+          async function fetchHistory(room) {
+            const response = await fetch(`/api/public/history?room=${room}`, { cache: 'no-store' });
+            if (!response.ok) throw new Error('Erreur historique');
+            return response.json();
+          }
 
-        function extractNumericPairsFromBrokenPayload(payload) {
-            // Ex: {"Tp en °C ":20,"State ":,"Indic ":wr} -> { tp_en_degc: 20 }
-            const text = String(payload || "");
-            const pairs = {};
-            const regex = /"([^"]+)"\s*:\s*([^,}\{]*)/g;
-            let match;
-
-            while ((match = regex.exec(text)) !== null) {
-                const rawKey = String(match[1] || "").trim().toLowerCase();
-                const rawValue = String(match[2] || "").trim().replace(/^"|"$/g, "");
-                if (!rawValue) continue;
-
-                const numeric = Number(rawValue);
-                if (!Number.isFinite(numeric)) continue;
-
-                const normalizedKey = rawKey
-                    .replace(/°/g, "deg")
-                    .replace(/\s+/g, "_")
-                    .replace(/[^a-z0-9_]+/g, "");
-
-                if (normalizedKey) {
-                    pairs[normalizedKey] = numeric;
-                }
-            }
-
-            return Object.keys(pairs).length > 0 ? pairs : null;
-        }
-
-        function parsePayloadRobust(payload) {
+          async function refreshPublicOverview() {
             try {
-                let parsed = JSON.parse(payload);
+              setLoadingState(true);
+              syncStateEl.textContent = 'Synchronisation en cours...';
+              summaryStateEl.textContent = 'Synchronisation…';
+              const response = await fetch('/api/public/overview', { cache: 'no-store' });
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-                // Cas fréquent: payload JSON sérialisé en string, ex "{\"pm25\":1}"
-                if (typeof parsed === "string") {
-                    const text = parsed.trim();
-                    if ((text.startsWith('{') && text.endsWith('}')) || (text.startsWith('[') && text.endsWith(']'))) {
-                        try {
-                            parsed = JSON.parse(text);
-                        } catch {
-                            // on garde la string d'origine si reparse impossible
-                        }
-                    }
-                }
+              const data = await response.json();
 
-                return parsed;
-            } catch {
-                return extractNumericPairsFromBrokenPayload(payload) ?? payload;
+              const avgTemp = [data?.salle1?.temperature, data?.salle2?.temperature]
+                .map((v) => Number(v)).filter(Number.isFinite);
+              const avgValue = avgTemp.length ? avgTemp.reduce((a, b) => a + b, 0) / avgTemp.length : null;
+
+              animateValue(document.getElementById('avg-temp'), avgValue, 1);
+              animateValue(document.getElementById('overview-s1-light'), data?.salle1?.lumiere, 0);
+              animateValue(document.getElementById('overview-s2-co2'), data?.salle2?.co2, 0);
+
+              animateValue(document.getElementById('s1-temp'), data?.salle1?.temperature, 1);
+              animateValue(document.getElementById('s1-hum'), data?.salle1?.humidite, 1);
+              animateValue(document.getElementById('s1-light'), data?.salle1?.lumiere, 0);
+
+              animateValue(document.getElementById('s2-temp'), data?.salle2?.temperature, 1);
+              animateValue(document.getElementById('s2-hum'), data?.salle2?.humidite, 1);
+              animateValue(document.getElementById('s2-light'), data?.salle2?.lumiere, 0);
+              animateValue(document.getElementById('s2-co2'), data?.salle2?.co2, 0);
+              animateValue(document.getElementById('s2-air'), data?.salle2?.qualite_air_score, 0);
+
+              summaryAirEl.textContent = Number.isFinite(Number(data?.salle2?.qualite_air_score))
+                ? Math.round(Number(data?.salle2?.qualite_air_score))
+                : '--';
+              summaryAirLabelEl.textContent = data?.salle2?.qualite_air_label || 'Indisponible';
+
+              const updated = formatDate(data?.generated_at || data?.salle2?.updated_at || data?.salle1?.updated_at);
+              updatedAtEl.textContent = updated;
+              updatedAtFooterEl.textContent = updated;
+              syncStateEl.textContent = 'Données à jour';
+              summaryStateEl.textContent = 'Synchronisé';
+              setLoadingState(false);
+
+              const [overviewHistory, salle1History, salle2History] = await Promise.all([
+                fetchHistory('overview'),
+                fetchHistory('salle1'),
+                fetchHistory('salle2')
+              ]);
+
+              drawSparkline('chart-overview', overviewHistory?.series?.salle1Temperature, '#7c3aed');
+              drawSparkline('chart-s1-light', salle1History?.series?.lumiere, '#0ea5e9');
+              drawSparkline('chart-s2-co2', salle2History?.series?.co2, '#f59e0b');
+
+              drawSparkline('chart-s1-temp', salle1History?.series?.temperature, '#2563eb');
+              drawSparkline('chart-s1-hum', salle1History?.series?.humidite, '#0ea5e9');
+              drawSparkline('chart-s1-light-room', salle1History?.series?.lumiere, '#14b8a6');
+
+              drawSparkline('chart-s2-temp', salle2History?.series?.temperature, '#2563eb');
+              drawSparkline('chart-s2-hum', salle2History?.series?.humidite, '#0ea5e9');
+              drawSparkline('chart-s2-light', salle2History?.series?.lumiere, '#14b8a6');
+              drawSparkline('chart-s2-co2-room', salle2History?.series?.co2, '#f59e0b');
+              drawSparkline('chart-s2-air', salle2History?.series?.air, '#ef4444');
+            } catch (error) {
+              console.error(error);
+              syncStateEl.textContent = 'Erreur de synchronisation';
+              summaryStateEl.textContent = 'Erreur';
+              setLoadingState(false);
             }
-        }
+          }
 
-        function bindMessageHandler(client) {
-            client.onMessageArrived = (message) => {
-            const topic = message.destinationName || message.topic || "unknown";
-            const payload = message.payloadString;
-            console.log("📡 [RX] " + topic, payload);
+          function initParticles() {
+            const canvas = document.getElementById('particle-canvas');
+            const ctx = canvas.getContext('2d');
+            const particles = Array.from({ length: 48 }, () => ({
+              x: Math.random(),
+              y: Math.random(),
+              r: 1.5 + Math.random() * 2.5,
+              vx: (Math.random() - 0.5) * 0.0006,
+              vy: (Math.random() - 0.5) * 0.0006
+            }));
 
-            const parsed = parsePayloadRobust(payload);
-
-            // Réponse API BDD: { capteur, donnees, statut }
-            if (parsed && parsed.capteur && Array.isArray(parsed.donnees)) {
-                const data = parsed;
-                const capteur = normalizeTopic(data.capteur);
-                const latestPoint = data.donnees[0];
-                const hasRecentData = latestPoint && isRecentDbPoint(latestPoint);
-
-                if (capteur.endsWith("/iaq") && data.statut === "succes") {
-                    // Ne recharge pas du vieux DB si du live IAQ arrive déjà
-                    if (Date.now() - lastLiveIaqUpdateMs > DB_FALLBACK_DELAY_MS) {
-                        processChartData(data.donnees);
-                    }
-                } else if (capteur.includes("/radar/") && capteur.endsWith("/nb") && data.statut === "succes") {
-                    if (shouldUseDbFallback('kpi-max-users')) {
-                        processRadarData(data.donnees);
-                    }
-                    if (latestPoint && Number.isFinite(Number(latestPoint.value))) {
-                        updateRadarTelemetryFromObject({ nb: Number(latestPoint.value) });
-                    }
-                } else if ((capteur.endsWith("/temperature") || capteur.endsWith("/tp_en_degc") || capteur.endsWith("/tp_c")) && data.statut === "succes") {
-                    if (shouldUseDbFallback('kpi-temp') && hasRecentData) {
-                        setKpiValue('kpi-temp', latestPoint.value, (v) => Number(v).toFixed(1));
-                    }
-                } else if ((capteur.endsWith("/humidity") || capteur.endsWith("/humidite") || capteur.endsWith("/hum")) && data.statut === "succes") {
-                    if (shouldUseDbFallback('kpi-hum') && hasRecentData) {
-                        setKpiValue('kpi-hum', latestPoint.value, (v) => Number(v).toFixed(1));
-                    }
-                } else if ((capteur.endsWith("/lux") || capteur.includes("/lumiere/")) && data.statut === "succes") {
-                    if (shouldUseDbFallback('kpi-light') && hasRecentData) {
-                        setKpiValue('kpi-light', latestPoint.value, (v) => Math.round(Number(v)));
-                    }
-                } else if ((capteur.endsWith("/pm25") || capteur.includes("pm25")) && data.statut === "succes") {
-                    if (hasRecentData) {
-                        latestPm25 = Number(latestPoint.value);
-                        if (Date.now() - lastLivePm25UpdateMs > DB_FALLBACK_DELAY_MS) {
-                            updateAirQualityFromPm(latestPm25, latestPm10, Date.now());
-                        }
-                    }
-                } else if ((capteur.endsWith("/pm10") || capteur.includes("pm10")) && data.statut === "succes") {
-                    if (hasRecentData) {
-                        latestPm10 = Number(latestPoint.value);
-                        if (Date.now() - lastLivePm10UpdateMs > DB_FALLBACK_DELAY_MS) {
-                            updateAirQualityFromPm(latestPm25, latestPm10, Date.now());
-                        }
-                    }
-                }
-                return;
-            }
-
-            // Flux live stats sismo: fallback visuel si PM indisponible
-            if (parsed && parsed.type === "live_stats" && parsed.stats && Number.isFinite(Number(parsed.stats.avg))) {
-                const tMs = parsed.timestamp_ms ? new Date(parsed.timestamp_ms).getTime() : Date.now();
-                if (latestPm25 === null && latestPm10 === null) {
-                    pushLiveIaqPoint(Number(parsed.stats.avg), tMs);
-                }
-                return;
+            function resize() {
+              canvas.width = window.innerWidth * (window.devicePixelRatio || 1);
+              canvas.height = window.innerHeight * (window.devicePixelRatio || 1);
+              ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
             }
 
-            // Flux capteur direct: { temperature, humidity|humidite, pm25, pm10, lux, nb, ... }
-            if (typeof parsed === "object" && parsed !== null) {
-                updateCasierTempsFromObject(parsed);
-                const tempValue = parsed.temperature ?? parsed.temp ?? parsed.tp_c ?? parsed.tp_en_degc ?? parsed.tc_c ?? parsed.tc_en_degc;
-                const humValue = parsed.humidity ?? parsed.humidite ?? parsed.hum;
-                const pm25Value = parsed.pm25 ?? parsed.pm_25;
-                const pm10Value = parsed.pm10 ?? parsed.pm_10;
-                const luxValue = parsed.lux ?? parsed.luminosite ?? parsed.light ?? parsed.illuminance;
-                const radarNbValue = parsed.nb ?? parsed.count ?? parsed.person_count;
-
-                if (tempValue !== undefined) {
-                    setLiveKpiValue('kpi-temp', tempValue, (v) => Number(v).toFixed(1));
-                }
-                if (humValue !== undefined) {
-                    setLiveKpiValue('kpi-hum', humValue, (v) => Number(v).toFixed(1));
-                }
-                if (luxValue !== undefined) {
-                    setLightKpi(luxValue, 'Source: Lux live');
-                }
-
-                if (pm25Value !== undefined) {
-                    latestPm25 = Number(pm25Value);
-                    lastLivePm25UpdateMs = Date.now();
-                }
-                if (pm10Value !== undefined) {
-                    latestPm10 = Number(pm10Value);
-                    lastLivePm10UpdateMs = Date.now();
-                }
-                if (radarNbValue !== undefined) {
-                    setLiveKpiValue('kpi-max-users', radarNbValue);
-                }
-
-                updateRadarTelemetryFromObject(parsed);
-
-                if ((pm25Value !== undefined || pm10Value !== undefined) && radarChart) {
-                    updateAirQualityFromPm(latestPm25, latestPm10, Date.now());
-                }
+            function step() {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.fillStyle = 'rgba(22, 77, 157, 0.25)';
+              particles.forEach((p) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x > 1) p.x = 0;
+                if (p.y > 1) p.y = 0;
+                if (p.x < 0) p.x = 1;
+                if (p.y < 0) p.y = 1;
+                ctx.beginPath();
+                ctx.arc(p.x * window.innerWidth, p.y * window.innerHeight, p.r, 0, Math.PI * 2);
+                ctx.fill();
+              });
+              requestAnimationFrame(step);
             }
 
-            // Flux capteur direct en valeur simple (topic + nombre)
-            const toNumber = (v) => {
-                const n = Number(typeof v === "string" ? v.trim() : v);
-                return Number.isFinite(n) ? n : null;
-            };
+            resize();
+            window.addEventListener('resize', resize);
+            step();
+          }
 
-            const scalar = toNumber(parsed);
-            if (scalar !== null) {
-                const t = topic.toLowerCase();
-
-                if (t.endsWith("/nb") || t.includes("/radar/")) {
-                    setLiveKpiValue('kpi-max-users', scalar, (v) => Math.round(Number(v)));
-                    updateRadarTelemetryFromObject({ nb: scalar });
-                }
-                if (t.endsWith("/temperature") || t.endsWith("/temp")) {
-                    setLiveKpiValue('kpi-temp', scalar, (v) => Number(v).toFixed(1));
-                }
-                if (t.endsWith("/tp_en_degc") || t.endsWith("/tp_c") || t.endsWith("/tc_en_degc") || t.endsWith("/tc_c")) {
-                    setLiveKpiValue('kpi-temp', scalar, (v) => Number(v).toFixed(1));
-                }
-                if (t.endsWith("/humidity") || t.endsWith("/humidite") || t.endsWith("/hum")) {
-                    setLiveKpiValue('kpi-hum', scalar, (v) => Number(v).toFixed(1));
-                }
-                if (t.endsWith("/lux") || t.includes("/lumiere/") || t.includes("luminosite")) {
-                    setLightKpi(scalar, 'Source: Lux live');
-                }
-                if (t.endsWith("/pm25") || t.includes("pm25")) {
-                    latestPm25 = Number(scalar);
-                    lastLivePm25UpdateMs = Date.now();
-                    updateAirQualityFromPm(latestPm25, latestPm10, Date.now());
-                }
-                if (t.endsWith("/pm10") || t.includes("pm10")) {
-                    latestPm10 = Number(scalar);
-                    lastLivePm10UpdateMs = Date.now();
-                    updateAirQualityFromPm(latestPm25, latestPm10, Date.now());
-                }
-                if (t.endsWith("/iaq") || t.includes("qualite_air") || t.includes("air_quality")) {
-                    if (latestPm25 === null && latestPm10 === null) {
-                        pushLiveIaqPoint(Number(scalar), Date.now());
-                    }
-                }
-            }
-            };
-        }
-
-        function subscribeBaseTopics() {
-            mqttClient.subscribe("FABLAB_21_22/WEB/REPONSE");
-            // Flux agrégé principal (source unique équipe)
-            mqttClient.subscribe("FABLAB_21_22/salle12/all");
-            mqttClient.subscribe("FABLAB_21_22/salle_122/env/#");
-            mqttClient.subscribe("FABLAB_21_22/IMREDD/iot15/radar/#");
-            mqttClient.subscribe("FABLAB_21_22/METEO/#");
-            mqttClient.subscribe("FABLAB_21_22/Distrikase_wifi/#");
-            mqttClient.subscribe("FABLAB_21_22/sismo_fablab/response/#");
-            // Topics alternatifs utilisés par d'autres collègues
-            mqttClient.subscribe("FABLAB_21_22/envir/salle12/#");
-            mqttClient.subscribe("FABLAB_21_22/RADAR/salle12/#");
-            mqttClient.subscribe("FABLAB_21_22/lumiere/salle12/#");
-        }
-
-        mqttClient.onConnectionLost = (responseObject) => {
-            updateLedState(false);
-            console.error(`[CRITICAL] Connexion perdue : ${responseObject.errorMessage}`);
-        };
-
-        console.log("🚀 Lancement Serveur Websocket Quantique...");
-        bindMessageHandler(mqttClient);
-        mqttClient.connect({
-            timeout: 4,
-            useSSL: true,
-            userName: mqttUsername,
-            password: mqttPassword,
-            onSuccess: () => {
-                console.log(`✅ Connecté au broker MQTT: Université (${broker}:${port})`);
-                updateLedState(true);
-                subscribeBaseTopics();
-                requestDataFromPython();
-            },
-            onFailure: (msg) => {
-                updateLedState(false);
-                console.error(`❌ Échec connexion Université: ${msg.errorMessage}`);
-            }
-        });
-
-        // --- 4. ENGINE I/O ---
-        function requestDataFromPython() {
-            if (!mqttClient || !mqttClient.isConnected()) {
-                alert("SYSTÈME HORS LIGNE : En attente de reconnexion..."); return;
-            }
-            
-            // Requêtes principales depuis le topic agrégé /all
-            const topics = [
-                "FABLAB_21_22/salle12/all/temperature",
-                "FABLAB_21_22/salle12/all/humidite",
-                "FABLAB_21_22/salle12/all/pm25",
-                "FABLAB_21_22/salle12/all/pm10",
-                "FABLAB_21_22/salle12/all/lux",
-
-                // Radar reste séparé tant qu'il n'est pas publié dans /all
-                "FABLAB_21_22/IMREDD/iot15/radar/nb",
-                "FABLAB_21_22/RADAR/salle12/nb",
-                "FABLAB_21_22/Distrikase_wifi/out/tp_en_degc"
-            ];
-            
-            topics.forEach((topic) => {
-                const limit = topic.includes("iaq") ? 15 : 1;
-                const payload = JSON.stringify({ "capteur": topic, "limite": limit });
-                const message = new Paho.MQTT.Message(payload);
-                message.destinationName = "FABLAB_21_22/WEB/REQUETE";
-                mqttClient.send(message);
-            });
-        }
-
-        function processChartData(donnees_sql) {
-            const heures = []; const valeurs = [];
-            
-            // Les données de l'API sont déjà remises dans l'ordre chronologique côté Python
-            donnees_sql.forEach(point => {
-                if (!isRecentDbPoint(point)) return;
-                heures.push(point.created_at.split(' ')[1].slice(0, 5));
-                valeurs.push(point.value);
-            });
-
-            if (valeurs.length === 0) return;
-
-            // Fenêtre glissante: on garde uniquement les N dernières valeurs
-            const clippedLabels = heures.slice(-CHART_MAX_POINTS);
-            const clippedValues = valeurs.slice(-CHART_MAX_POINTS);
-            
-            // Animation cool de mise à jour
-            radarChart.data.labels = clippedLabels;
-            radarChart.data.datasets[0].data = clippedValues;
-            radarChart.update();
-
-            // Maintient le curseur temporel sur le dernier point affiché
-            lastChartPointMs = Date.now();
-        }
-
-        function processRadarData(donnees_sql) {
-             if(donnees_sql.length > 0) {
-                 const nb = Number(donnees_sql[0].value);
-                 document.getElementById('kpi-max-users').innerText = nb;
-                 updateRadarTelemetryFromObject({ nb });
-             }
-        }
-
-        // Etat initial visuel
-        updateAirQualityBadge(null);
-
-        function toggleLight(checkbox) {
-            const numValue = checkbox.checked ? 1 : 0;
-            sendCommand('FABLAB_21_22/CMD/lumiere1', '{"relais": ' + numValue + '}');
-        }
-
-        function sendCommand(topic, valeur) {
-            if (!mqttClient || !mqttClient.isConnected()) return alert("ERREUR TX : Broker inaccessible.");
-            const message = new Paho.MQTT.Message(String(valeur));
-            message.destinationName = topic;
-            mqttClient.send(message);
-            console.log(`⚡ [TX] ${topic} >>> ${valeur}`);
-        }
-    </script>
-</body>
-</html>
+          refreshBtn.addEventListener('click', refreshPublicOverview);
+          initParticles();
+          refreshPublicOverview();
+          setInterval(refreshPublicOverview, 20000);
+        </script>
+      </body>
+      </html>

@@ -30,6 +30,8 @@ DB_NAME = os.getenv("DB_NAME", "fablab_monitoring")
 # Throttling par topic
 SAVE_INTERVAL_SECONDS = max(0, int(os.getenv("SAVE_INTERVAL_SECONDS", "60")))
 last_saved_time = {}
+MAX_TEXT_PAYLOAD = max(1000, int(os.getenv("MAX_TEXT_PAYLOAD", "1000000")))
+CAMERA_KEYWORDS = ("camera", "cam", "infra", "ir", "image", "frame")
 
 
 def ensure_db_schema():
@@ -47,12 +49,23 @@ def ensure_db_schema():
             CREATE TABLE IF NOT EXISTS sensor_data (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 topic VARCHAR(255) NOT NULL,
-                value DOUBLE NOT NULL,
+                value DOUBLE NULL,
+                value_text LONGTEXT NULL,
+                value_type VARCHAR(12) DEFAULT 'num',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_topic_created_at (topic, created_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """
         )
+        cursor.execute("SHOW COLUMNS FROM sensor_data LIKE 'value_text'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE sensor_data ADD COLUMN value_text LONGTEXT NULL")
+
+        cursor.execute("SHOW COLUMNS FROM sensor_data LIKE 'value_type'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE sensor_data ADD COLUMN value_type VARCHAR(12) DEFAULT 'num'")
+
+        cursor.execute("ALTER TABLE sensor_data MODIFY value DOUBLE NULL")
         conn.commit()
         print("🧱 Schéma DB prêt (table sensor_data).")
     except mysql.connector.Error as err:
@@ -81,6 +94,11 @@ def normalize_key(key):
 def build_sub_topic(base_topic, key):
     """Construit un sous-topic sans slash en double."""
     return f"{base_topic.rstrip('/')}/{normalize_key(key)}"
+
+
+def is_camera_topic(topic, key=None):
+    target = f"{topic}/{key or ''}".lower()
+    return any(keyword in target for keyword in CAMERA_KEYWORDS)
 
 
 def extract_numeric_pairs_from_broken_payload(payload):
@@ -152,8 +170,35 @@ def extract_numeric_points(topic, payload):
     return [], "unusable"
 
 
-def save_to_db(topic, value):
-    """Insère une valeur en DB si le throttle du topic est écoulé."""
+def extract_text_points(topic, payload):
+    """Extrait des payloads texte (base64, image) pour les topics caméra."""
+    if not is_camera_topic(topic):
+        return []
+
+    points = []
+
+    try:
+        data = json.loads(payload)
+        if isinstance(data, dict):
+            for key, value in data.items():
+                if isinstance(value, str) and is_camera_topic(topic, key):
+                    cleaned = value.strip()
+                    if cleaned:
+                        points.append((build_sub_topic(topic, key), cleaned))
+            if points:
+                return points
+    except json.JSONDecodeError:
+        pass
+
+    raw = str(payload or "").strip()
+    if raw:
+        points.append((topic, raw))
+
+    return points
+
+
+def save_numeric_to_db(topic, value):
+    """Insère une valeur numérique en DB si le throttle du topic est écoulé."""
     current_time = time.time()
     last_saved_time.setdefault(topic, 0)
 
@@ -176,12 +221,58 @@ def save_to_db(topic, value):
             database=DB_NAME,
         )
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO sensor_data (topic, value) VALUES (%s, %s)", (topic, float_value))
+        cursor.execute(
+            "INSERT INTO sensor_data (topic, value, value_text, value_type) VALUES (%s, %s, %s, 'num')",
+            (topic, float_value, None),
+        )
         conn.commit()
         last_saved_time[topic] = current_time
         print(f"💾 Sauvé: {topic} = {float_value}")
     except mysql.connector.Error as err:
         print(f"❌ Erreur MySQL : {err}")
+    finally:
+        if "conn" in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+
+def save_text_to_db(topic, value):
+    """Insère un payload texte en DB si le throttle du topic est écoulé."""
+    text_key = f"{topic}|text"
+    current_time = time.time()
+    last_saved_time.setdefault(text_key, 0)
+
+    elapsed = current_time - last_saved_time[text_key]
+    if elapsed < SAVE_INTERVAL_SECONDS:
+        print(f"⏳ Ignoré (throttle texte): {topic}, dernier insert il y a {int(elapsed)}s")
+        return
+
+    text_value = str(value or "").strip()
+    if not text_value:
+        print(f"⚠️ Ignoré (texte vide): topic={topic}")
+        return
+
+    if len(text_value) > MAX_TEXT_PAYLOAD:
+        text_value = text_value[:MAX_TEXT_PAYLOAD]
+        print(f"✂️ Payload texte tronqué à {MAX_TEXT_PAYLOAD} caractères: {topic}")
+
+    try:
+        conn = mysql.connector.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASS,
+            database=DB_NAME,
+        )
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO sensor_data (topic, value, value_text, value_type) VALUES (%s, %s, %s, 'text')",
+            (topic, None, text_value),
+        )
+        conn.commit()
+        last_saved_time[text_key] = current_time
+        print(f"🖼️ Sauvé (texte): {topic} ({len(text_value)} chars)")
+    except mysql.connector.Error as err:
+        print(f"❌ Erreur MySQL texte : {err}")
     finally:
         if "conn" in locals() and conn.is_connected():
             cursor.close()
@@ -195,6 +286,7 @@ def on_message(client, userdata, msg):
         print(f"🔔 Message MQTT [{topic}] : {payload}")
 
         points, mode = extract_numeric_points(topic, payload)
+        text_points = extract_text_points(topic, payload)
 
         if mode == "broken-json" and points:
             print(f"🛠️ JSON cassé récupéré partiellement sur [{topic}] ({len(points)} champs numériques).")
@@ -203,12 +295,15 @@ def on_message(client, userdata, msg):
         elif mode == "raw":
             print(f"✅ Valeur numérique brute détectée sur {topic}")
 
-        if not points:
+        if not points and not text_points:
             print(f"⚠️ Ignoré (inexploitable): topic={topic}")
             return
 
         for sub_topic, value in points:
-            save_to_db(sub_topic, value)
+            save_numeric_to_db(sub_topic, value)
+
+        for sub_topic, value in text_points:
+            save_text_to_db(sub_topic, value)
 
     except Exception as err:
         print(f"❌ Erreur inattendue sur {msg.topic}: {err}")

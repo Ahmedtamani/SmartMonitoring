@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FabLab Valrose | Administration Monitoring</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f2f6fb;
+      --paper: #ffffff;
+      --paper-2: #f7fbff;
+      --ink: #0f172a;
+      --muted: #5a6b84;
+      --brand: #0f4c81;
+      --brand-2: #2c7ecf;
+      --line: rgba(15, 76, 129, 0.14);
+      --shadow: 0 20px 50px rgba(15, 76, 129, 0.14);
+      --ok: #16a34a;
+      --bad: #dc2626;
+      --warn: #d97706;
+      --radius-lg: 24px;
+      --radius-md: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      color: var(--ink);
+      min-height: 100vh;
+      background:
+        radial-gradient(1000px 520px at 100% -10%, rgba(44,126,207,.25), transparent 60%),
+        radial-gradient(900px 520px at -10% 10%, rgba(15,76,129,.18), transparent 55%),
+        linear-gradient(135deg, #f0f4fb 0%, #f9fbff 100%);
+      overflow-x: hidden;
+    }
+
+    .ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      opacity: .5;
+      animation: drift 18s ease-in-out infinite;
+    }
+
+    .orb.one { width: 320px; height: 320px; background: radial-gradient(circle, rgba(44,126,207,.35), transparent 70%); top: -90px; right: -90px; }
+    .orb.two { width: 260px; height: 260px; background: radial-gradient(circle, rgba(14,165,233,.28), transparent 70%); bottom: 10%; left: -70px; animation-delay: -6s; }
+
+    @keyframes drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(12px, -10px) scale(1.05); }
+    }
+
+    .layout { max-width: 1280px; margin: 0 auto; padding: 24px; }
+
+    .auth-wrap {
+      max-width: 1040px;
+      margin: 40px auto;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 16px;
+    }
+
+    .auth-info, .auth-form {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 26px;
+    }
+
+    .auth-info h1 {
+      margin: 0 0 10px;
+      font-family: 'Source Serif 4', serif;
+      font-size: clamp(1.6rem, 3vw, 2.1rem);
+      color: #0d2f4d;
+    }
+
+    .auth-info p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .zone-chip {
+      margin-top: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: #fff1f2;
+      color: #9f1239;
+      border: 1px solid #fecdd3;
+      font-size: .78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .field { margin-bottom: 12px; }
+    .field label {
+      display: block;
+      font-size: .83rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .field input, .field textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: .92rem;
+      font-family: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .field textarea { min-height: 110px; resize: vertical; }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      color: white;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: 0 10px 22px rgba(44,126,207,.25);
+    }
+
+    .btn-muted {
+      color: var(--brand);
+      background: var(--paper-2);
+      border: 1px solid var(--line);
+    }
+
+    .btn-danger {
+      color: #991b1b;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+    }
+
+    .msg { font-size: .84rem; margin-top: 8px; }
+    .msg.ok { color: var(--ok); }
+    .msg.err { color: var(--bad); }
+
+    .hidden { display: none !important; }
+
+    .header {
+      background: rgba(255,255,255,.92);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 12px;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+      margin-bottom: 18px;
+    }
+
+    .header h2 { margin: 0; font-size: 1.1rem; }
+    .header p { margin: 3px 0 0; color: var(--muted); font-size: .82rem; }
+    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .dashboard {
+      display: grid;
+      gap: 16px;
+    }
+
+    .room-card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+
+    .room-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 28px 60px rgba(15, 76, 129, 0.18);
+    }
+
+    .room-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .room-title {
+      margin: 0;
+      font-size: 1.05rem;
+      color: #0b2e4a;
+    }
+
+    .room-sub {
+      font-size: .82rem;
+      color: var(--muted);
+    }
+
+    .room-chip {
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 700;
+      background: #e8f2fd;
+      color: #0f4c81;
+      border: 1px solid #cfe3f8;
+    }
+
+    .message-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .message-card {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      padding: 14px;
+      background: var(--paper-2);
+      display: grid;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .message-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(44,126,207,.1), transparent 60%);
+      opacity: 0;
+      transition: opacity .3s ease;
+    }
+
+    .message-card:hover::before { opacity: 1; }
+
+    .message-title {
+      font-weight: 800;
+      font-size: .9rem;
+      color: #0b2e4a;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      border-bottom: 1px dashed #e6eef8;
+      padding: 6px 0;
+      font-size: .88rem;
+    }
+
+    .metric:last-child { border-bottom: 0; }
+    .metric .label { color: var(--muted); }
+    .metric .value { font-weight: 700; color: #0f2438; }
+
+    .metric .value.pulse {
+      animation: valuePop .45s ease;
+    }
+
+    @keyframes valuePop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    .image-slot {
+      border-radius: 14px;
+      border: 1px solid #d8e4f2;
+      background: #fff;
+      padding: 10px;
+      display: grid;
+      place-items: center;
+      min-height: 200px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .image-slot img {
+      max-width: 100%;
+      max-height: 240px;
+      border-radius: 10px;
+      display: block;
+    }
+
+    .image-fallback {
+      color: var(--muted);
+      font-size: .82rem;
+      text-align: center;
+    }
+
+    .block {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .block h3 { margin: 0 0 12px; font-size: 1rem; color: #143654; }
+    .line { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+    .log {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f8fbff;
+      padding: 10px;
+      font-size: .79rem;
+      color: #1e3a56;
+      max-height: 240px;
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 1040px) {
+      .auth-wrap { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="layout">
+    <div class="ambient">
+      <div class="orb one"></div>
+      <div class="orb two"></div>
+    </div>
+    <section id="login-view" class="auth-wrap">
+      <article class="auth-info">
+        <h1>Administration sécurisée — FabLab Valrose</h1>
+        <p>
+          Zone réservée au personnel habilité. Supervision complète des deux salles (données publiques + capteurs sensibles)
+          et pilotage des équipements via MQTT.
+        </p>
+        <div class="zone-chip">Zone privée · Autorisation requise</div>
+      </article>
+
+      <article class="auth-form">
+        <h3 style="margin-top:0">Connexion administrateur</h3>
+        <div class="field">
+          <label for="username">Utilisateur</label>
+          <input id="username" autocomplete="username" placeholder="admin" />
+        </div>
+        <div class="field">
+          <label for="password">Mot de passe</label>
+          <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+        </div>
+        <div class="line">
+          <button id="login-btn" class="btn btn-primary">Se connecter</button>
+          <a href="/" class="btn btn-muted" style="text-decoration:none">Retour public</a>
+        </div>
+        <p id="login-msg" class="msg"></p>
+      </article>
+    </section>
+
+    <section id="admin-view" class="hidden">
+      <header class="header">
+        <div>
+          <h2>FabLab Valrose · Console Administrateur</h2>
+          <p>Monitoring avancé · Caméras, radar et commandes MQTT en temps réel</p>
+        </div>
+        <div class="header-actions">
+          <button id="refresh-btn" class="btn btn-primary">Actualiser</button>
+          <button id="logout-btn" class="btn btn-danger">Déconnexion</button>
+        </div>
+      </header>
+
+      <section class="dashboard">
+        <article class="room-card">
+          <div class="room-head">
+            <div>
+              <h3 class="room-title">Salle 1 · Message 1 + Caméra IA</h3>
+              <div class="room-sub">Température, humidité, lumière + flux IA privé</div>
+            </div>
+            <span class="room-chip">Salle 1</span>
+          </div>
+          <div class="message-grid">
+            <div class="message-card">
+              <div class="message-title">Message 1 · Capteurs</div>
+              <div class="metric"><span class="label">Température</span><span class="value" id="a-s1-temp">--</span></div>
+              <div class="metric"><span class="label">Humidité</span><span class="value" id="a-s1-hum">--</span></div>
+              <div class="metric"><span class="label">Lumière</span><span class="value" id="a-s1-light">--</span></div>
+            </div>
+            <div class="message-card">
+              <div class="message-title">Message 2 · Caméra IA</div>
+              <div class="image-slot">
+                <img id="a-s1-camera-img" alt="Caméra IA" />
+                <div id="a-s1-camera-fallback" class="image-fallback">Aucune image disponible</div>
+              </div>
+              <div class="metric"><span class="label">Payload</span><span class="value" id="a-s1-camera-text">--</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="room-card">
+          <div class="room-head">
+            <div>
+              <h3 class="room-title">Salle 2 · Air + Radar + IR</h3>
+              <div class="room-sub">Air, température, humidité, CO₂, lumière + radar &amp; caméra IR</div>
+            </div>
+            <span class="room-chip">Salle 2</span>
+          </div>
+          <div class="message-grid">
+            <div class="message-card">
+              <div class="message-title">Message 1 · Environnement</div>
+              <div class="metric"><span class="label">Température</span><span class="value" id="a-s2-temp">--</span></div>
+              <div class="metric"><span class="label">Humidité</span><span class="value" id="a-s2-hum">--</span></div>
+              <div class="metric"><span class="label">Lumière</span><span class="value" id="a-s2-light">--</span></div>
+              <div class="metric"><span class="label">CO₂</span><span class="value" id="a-s2-co2">--</span></div>
+              <div class="metric"><span class="label">Indice air</span><span class="value" id="a-s2-air">--</span></div>
+            </div>
+            <div class="message-card">
+              <div class="message-title">Message 2 · Radar + Caméra IR</div>
+              <div class="metric"><span class="label">Radar · Cibles</span><span class="value" id="a-radar-nb">--</span></div>
+              <div class="metric"><span class="label">Radar · Distance C1</span><span class="value" id="a-radar-dist">--</span></div>
+              <div class="metric"><span class="label">Radar · Vitesse C1</span><span class="value" id="a-radar-speed">--</span></div>
+              <div class="image-slot">
+                <img id="a-s2-infra-img" alt="Caméra infrarouge" />
+                <div id="a-s2-infra-fallback" class="image-fallback">Aucune image disponible</div>
+              </div>
+              <div class="metric"><span class="label">Payload IR</span><span class="value" id="a-s2-infra-text">--</span></div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="block">
+        <h3>Commande MQTT (admin → capteurs)</h3>
+        <div class="field">
+          <label for="cmd-topic">Topic MQTT</label>
+          <input id="cmd-topic" placeholder="FABLAB_21_22/CMD/lumiere1" />
+        </div>
+        <div class="field">
+          <label for="cmd-payload">Payload (texte ou JSON)</label>
+          <textarea id="cmd-payload" placeholder='{"relais":1}'></textarea>
+        </div>
+        <div class="line">
+          <button id="send-btn" class="btn btn-primary">Envoyer commande</button>
+          <button id="load-logs-btn" class="btn btn-muted">Recharger logs</button>
+        </div>
+        <p id="cmd-msg" class="msg"></p>
+        <div id="cmd-log" class="log">Aucun log disponible.</div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const loginView = document.getElementById('login-view');
+    const adminView = document.getElementById('admin-view');
+    const loginMsg = document.getElementById('login-msg');
+    const cmdMsg = document.getElementById('cmd-msg');
+    const cmdLog = document.getElementById('cmd-log');
+
+    function token() {
+      return localStorage.getItem('smartmonitoring_admin_token') || '';
+    }
+
+    function saveToken(value) {
+      localStorage.setItem('smartmonitoring_admin_token', value);
+    }
+
+    function clearToken() {
+      localStorage.removeItem('smartmonitoring_admin_token');
+    }
+
+    function authHeaders() {
+      const t = token();
+      return t ? { Authorization: `Bearer ${t}` } : {};
+    }
+
+    function fmtNum(value, digits = 1) {
+      const n = Number(value);
+      return Number.isFinite(n) ? `${n.toFixed(digits)}` : '--';
+    }
+
+    function fmtInt(value) {
+      const n = Number(value);
+      return Number.isFinite(n) ? `${Math.round(n)}` : '--';
+    }
+
+    function normalizeImageSrc(raw) {
+      if (!raw) return '';
+      const trimmed = String(raw).trim();
+      if (!trimmed) return '';
+      if (trimmed.startsWith('data:image')) return trimmed;
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+      return `data:image/jpeg;base64,${trimmed}`;
+    }
+
+    function pulseValue(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('pulse');
+      void el.offsetWidth;
+      el.classList.add('pulse');
+    }
+
+    function setImage(imgId, fallbackId, raw) {
+      const imgEl = document.getElementById(imgId);
+      const fallbackEl = document.getElementById(fallbackId);
+      const src = normalizeImageSrc(raw);
+      if (src) {
+        imgEl.src = src;
+        imgEl.style.display = 'block';
+        fallbackEl.textContent = '';
+      } else {
+        imgEl.removeAttribute('src');
+        imgEl.style.display = 'none';
+        fallbackEl.textContent = 'Aucune image disponible';
+      }
+    }
+
+    async function doLogin() {
+      try {
+        loginMsg.className = 'msg';
+        loginMsg.textContent = 'Connexion...';
+
+        const response = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value.trim(),
+            password: document.getElementById('password').value
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || 'Échec de connexion');
+
+        saveToken(data.token);
+        loginView.classList.add('hidden');
+        adminView.classList.remove('hidden');
+        await refreshOverview();
+        await loadLogs();
+      } catch (error) {
+        loginMsg.className = 'msg err';
+        loginMsg.textContent = error.message;
+      }
+    }
+
+    async function doLogout() {
+      try {
+        await fetch('/api/admin/logout', {
+          method: 'POST',
+          headers: { ...authHeaders() }
+        });
+      } catch (_) {}
+      clearToken();
+      adminView.classList.add('hidden');
+      loginView.classList.remove('hidden');
+    }
+
+    async function refreshOverview() {
+      const response = await fetch('/api/admin/overview', { headers: { ...authHeaders() } });
+      if (response.status === 401) {
+        await doLogout();
+        return;
+      }
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || 'Erreur overview admin');
+
+  document.getElementById('a-s1-temp').textContent = `${fmtNum(data?.salle1?.temperature)} °C`;
+  document.getElementById('a-s1-hum').textContent = `${fmtNum(data?.salle1?.humidite)} %`;
+  document.getElementById('a-s1-light').textContent = `${fmtInt(data?.salle1?.lumiere)} lux`;
+  pulseValue('a-s1-temp');
+  pulseValue('a-s1-hum');
+  pulseValue('a-s1-light');
+      document.getElementById('a-s1-camera-text').textContent = data?.salle1?.camera_ia ? 'Payload reçu' : '--';
+      setImage('a-s1-camera-img', 'a-s1-camera-fallback', data?.salle1?.camera_ia);
+
+  document.getElementById('a-s2-temp').textContent = `${fmtNum(data?.salle2?.temperature)} °C`;
+  document.getElementById('a-s2-hum').textContent = `${fmtNum(data?.salle2?.humidite)} %`;
+  document.getElementById('a-s2-light').textContent = `${fmtInt(data?.salle2?.lumiere)} lux`;
+  document.getElementById('a-s2-co2').textContent = `${fmtInt(data?.salle2?.co2)} ppm`;
+  document.getElementById('a-s2-air').textContent = `${fmtInt(data?.salle2?.qualite_air_score)} /500`;
+  pulseValue('a-s2-temp');
+  pulseValue('a-s2-hum');
+  pulseValue('a-s2-light');
+  pulseValue('a-s2-co2');
+  pulseValue('a-s2-air');
+
+  document.getElementById('a-radar-nb').textContent = fmtInt(data?.salle2?.radar?.nb);
+  document.getElementById('a-radar-dist').textContent = `${fmtInt(data?.salle2?.radar?.distance_cm)} cm`;
+  document.getElementById('a-radar-speed').textContent = `${fmtNum(data?.salle2?.radar?.vitesse_ms, 2)} m/s`;
+  pulseValue('a-radar-nb');
+  pulseValue('a-radar-dist');
+  pulseValue('a-radar-speed');
+
+      document.getElementById('a-s2-infra-text').textContent = data?.salle2?.camera_infra ? 'Payload reçu' : '--';
+      setImage('a-s2-infra-img', 'a-s2-infra-fallback', data?.salle2?.camera_infra);
+    }
+
+    async function sendCommand() {
+      try {
+        cmdMsg.className = 'msg';
+        cmdMsg.textContent = 'Envoi commande...';
+
+        const topic = document.getElementById('cmd-topic').value.trim();
+        const rawPayload = document.getElementById('cmd-payload').value;
+
+        let payload = rawPayload;
+        try { payload = JSON.parse(rawPayload); } catch (_) {}
+
+        const response = await fetch('/api/admin/command', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders()
+          },
+          body: JSON.stringify({ topic, payload })
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || 'Échec envoi commande');
+
+        cmdMsg.className = 'msg ok';
+        cmdMsg.textContent = `Commande envoyée sur ${data.topic}`;
+        await loadLogs();
+      } catch (error) {
+        cmdMsg.className = 'msg err';
+        cmdMsg.textContent = error.message;
+      }
+    }
+
+    async function loadLogs() {
+      try {
+        const response = await fetch('/api/admin/commands', { headers: { ...authHeaders() } });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || 'Erreur logs');
+
+        if (!data.items?.length) {
+          cmdLog.textContent = 'Aucun log disponible.';
+          return;
+        }
+
+        cmdLog.textContent = data.items
+          .map((item) => `${item.at} | ${item.by} | ${item.topic} | ${item.payload}`)
+          .join('\n');
+      } catch (error) {
+        cmdLog.textContent = `Erreur logs: ${error.message}`;
+      }
+    }
+
+    document.getElementById('login-btn').addEventListener('click', doLogin);
+    document.getElementById('logout-btn').addEventListener('click', doLogout);
+    document.getElementById('refresh-btn').addEventListener('click', refreshOverview);
+    document.getElementById('send-btn').addEventListener('click', sendCommand);
+    document.getElementById('load-logs-btn').addEventListener('click', loadLogs);
+
+    async function bootstrap() {
+      if (!token()) return;
+      try {
+        await refreshOverview();
+        await loadLogs();
+        loginView.classList.add('hidden');
+        adminView.classList.remove('hidden');
+      } catch {
+        clearToken();
+      }
+    }
+
+    bootstrap();
+    setInterval(async () => {
+      if (!token()) return;
+      try { await refreshOverview(); } catch (_) {}
+    }, 12000);
+  </script>
+</body>
+</html>
