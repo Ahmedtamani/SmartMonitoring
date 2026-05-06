@@ -1,18 +1,17 @@
 services:
-  # 1. Le Broker MQTT (Eclipse Mosquitto)
+
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: iot_mosquitto
     ports:
-      - "1883:1883" # Port standard MQTT
-      - "9001:9001" # Port pour les WebSockets (utile pour le site web)
+      - "1883:1883"
+      - "9001:9001"
     volumes:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
       - ./mosquitto/log:/mosquitto/log
     restart: unless-stopped
 
-  # 2. La Base de données (MySQL)
   mysql:
     image: mysql:8.0
     container_name: iot_mysql
@@ -22,9 +21,65 @@ services:
       MYSQL_USER: ${MYSQL_USER:-fablab_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3306:3306" # Port standard MySQL
+      - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql           # Volume Docker nommé (plus robuste cross-runtime)
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bridge:
+    image: python:3.11-slim
+    container_name: iot_bridge
+    working_dir: /app
+    volumes:
+      - ./bridge:/app
+    env_file: .env
+    environment:
+      DB_HOST: mysql
+    command: >
+      bash -c "pip install -q -r requirements.txt && python main.py"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  api_mqtt:
+    image: python:3.11-slim
+    container_name: iot_api_mqtt
+    working_dir: /app
+    volumes:
+      - ./bridge:/app
+    env_file: .env
+    environment:
+      DB_HOST: mysql
+    command: >
+      bash -c "pip install -q -r requirements.txt && python api_mqtt.py"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    image: node:20-slim
+    container_name: iot_web
+    working_dir: /app
+    volumes:
+      - ./web_interface:/app
+    env_file: .env
+    environment:
+      DB_HOST: mysql
+      WEB_PORT: 3000
+    command: >
+      bash -c "npm install --silent && node server.js"
+    ports:
+      - "3000:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

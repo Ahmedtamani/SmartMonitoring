@@ -91,102 +91,25 @@ function computeAirQualityScore(pm25, pm10) {
 
 const TOPIC_PATTERNS = {
     salle1: {
-        temperature: [
-            '%/salle1/%temperature%',
-            '%/salle1/%temp%',
-            '%/salle_1%/temperature%',
-            '%/salle_1%/temp%'
-        ],
-        humidite: [
-            '%/salle1/%humidite%',
-            '%/salle1/%hum%',
-            '%/salle_1%/humidite%',
-            '%/salle_1%/hum%',
-            '%/salle1/%humidity%'
-        ],
-        lumiere: [
-            '%/salle1/%lumiere%',
-            '%/salle1/%lux%',
-            '%/salle_1%/lumiere%',
-            '%/salle_1%/lux%'
-        ],
-        cameraIa: [
-            '%/salle1/%camera%',
-            '%/salle1/%ia%',
-            '%/salle_1%/camera%',
-            '%/salle_1%/ia%'
-        ]
+        temperature: ['%fablab_21_22/envir/salle_104/temperature%'],
+        humidite:    ['%fablab_21_22/envir/salle_104/humidite%'],
+        lumiere:     ['%fablab_21_22/envir/salle_104/lux%', '%fablab_21_22/environ/salle_104/lux%'],
+        pm25:        ['%fablab_21_22/envir/salle_104/pm25%'],
+        pm10:        ['%fablab_21_22/envir/salle_104/pm10%'],
+        cameraIa:    []
     },
     salle2: {
-        temperature: [
-            '%/salle2/%temperature%',
-            '%/salle2/%temp%',
-            '%/salle_2%/temperature%',
-            '%/salle_2%/temp%'
-        ],
-        humidite: [
-            '%/salle2/%humidite%',
-            '%/salle2/%hum%',
-            '%/salle_2%/humidite%',
-            '%/salle_2%/hum%',
-            '%/salle2/%humidity%'
-        ],
-        lumiere: [
-            '%/salle2/%lumiere%',
-            '%/salle2/%lux%',
-            '%/salle_2%/lumiere%',
-            '%/salle_2%/lux%'
-        ],
-        co2: [
-            '%/salle2/%co2%',
-            '%/salle_2%/co2%'
-        ],
-        air: [
-            '%/salle2/%air%',
-            '%/salle2/%qualite%',
-            '%/salle2/%quality%',
-            '%/salle_2%/air%',
-            '%/salle_2%/qualite%'
-        ],
-        pm25: [
-            '%/salle2/%pm25%',
-            '%/salle2/%pm_25%',
-            '%/salle_2%/pm25%',
-            '%/salle_2%/pm_25%'
-        ],
-        pm10: [
-            '%/salle2/%pm10%',
-            '%/salle2/%pm_10%',
-            '%/salle_2%/pm10%',
-            '%/salle_2%/pm_10%'
-        ],
-        radarNb: [
-            '%/salle2/%radar%/nb%',
-            '%/salle2/%/nb%',
-            '%/radar/salle2%/nb%',
-            '%/radar/salle_2%/nb%',
-            '%/radar/salle104/nb%'
-        ],
-        radarDist: [
-            '%/salle2/%radar%c1%dist%',
-            '%/salle2/%radar%dist%',
-            '%/radar/salle2%/dist%'
-        ],
-        radarSpeed: [
-            '%/salle2/%radar%c1%vitesse%',
-            '%/salle2/%radar%vitesse%',
-            '%/radar/salle2%/vitesse%'
-        ],
-        cameraInfra: [
-            '%/salle2/%infra%',
-            '%/salle2/%ir%',
-            '%/salle2/%camera%',
-            '%/salle2/%image%',
-            '%/salle_2%/infra%',
-            '%/salle_2%/ir%',
-            '%/salle_2%/camera%',
-            '%/salle_2%/image%'
-        ]
+        temperature: ['%fablab_21_22/salle12/all/temperature%'],
+        humidite:    ['%fablab_21_22/salle12/all/humidite%'],
+        lumiere:     ['%fablab_21_22/salle12/all/lux%'],
+        pm25:        ['%fablab_21_22/salle12/all/pm25%'],
+        pm10:        ['%fablab_21_22/salle12/all/pm10%'],
+        co2:         [],
+        air:         [],
+        radarNb:     ['%fablab_21_22/radar/salle104/nb%'],
+        radarDist:   ['%fablab_21_22/radar/salle104/c1_dist_cm%'],
+        radarSpeed:  ['%fablab_21_22/radar/salle104/c1_vitesse%'],
+        cameraInfra: []
     }
 };
 
@@ -201,6 +124,7 @@ function classifyAirQuality(score) {
 }
 
 async function fetchLatestMetricByPatterns(patterns) {
+    if (!patterns || patterns.length === 0) return null;
     try {
         const sql = `
             SELECT topic, value, created_at
@@ -220,6 +144,7 @@ async function fetchLatestMetricByPatterns(patterns) {
 }
 
 async function fetchLatestTextByPatterns(patterns) {
+    if (!patterns || patterns.length === 0) return null;
     try {
         const sql = `
             SELECT topic, value_text AS value, created_at
@@ -239,6 +164,7 @@ async function fetchLatestTextByPatterns(patterns) {
 }
 
 async function fetchHistoryByPatterns(patterns, hours = 24, limit = 120) {
+    if (!patterns || patterns.length === 0) return [];
     try {
         const since = new Date(Date.now() - hours * 60 * 60 * 1000);
         const sql = `
@@ -362,15 +288,68 @@ app.get('/api/mesures', async (req, res) => {
     }
 });
 
+
 app.get('/api/public/overview', async (req, res) => {
     try {
-        const { publicData } = await buildOverviewData();
-        res.json(publicData);
-    } catch (error) {
-        console.error('Erreur overview public:', error);
-        res.status(500).json({ error: 'Impossible de récupérer les métriques publiques' });
+        const topics = [
+            'FABLAB_21_22/envir/salle_104/temperature',
+            'FABLAB_21_22/envir/salle_104/humidite',
+            'FABLAB_21_22/envir/salle_104/lux',
+            'FABLAB_21_22/envir/salle_104/pm25',
+            'FABLAB_21_22/envir/salle_104/pm10',
+            'FABLAB_21_22/salle12/all/temperature',
+            'FABLAB_21_22/salle12/all/humidite',
+            'FABLAB_21_22/salle12/all/lux',
+            'FABLAB_21_22/salle12/all/pm25',
+            'FABLAB_21_22/salle12/all/pm10'
+        ];
+
+        const [rows] = await pool.query(
+            `SELECT topic, value, created_at
+             FROM sensor_data
+             WHERE topic IN (?)
+             AND value IS NOT NULL
+             ORDER BY created_at DESC`,
+            [topics]
+        );
+
+        const latest = {};
+        for (const row of rows) {
+            if (!latest[row.topic]) latest[row.topic] = row.value;
+        }
+
+        const pm25_s1 = latest['FABLAB_21_22/envir/salle_104/pm25'];
+        const pm10_s1 = latest['FABLAB_21_22/envir/salle_104/pm10'];
+        const pm25_s2 = latest['FABLAB_21_22/salle12/all/pm25'];
+        const pm10_s2 = latest['FABLAB_21_22/salle12/all/pm10'];
+
+        res.json({
+            generated_at: new Date().toISOString(),
+            salle1: {
+                temperature: latest['FABLAB_21_22/envir/salle_104/temperature'] || null,
+                humidite:    latest['FABLAB_21_22/envir/salle_104/humidite'] || null,
+                lumiere:     latest['FABLAB_21_22/envir/salle_104/lux'] || null,
+                pm25:        pm25_s1 || null,
+                pm10:        pm10_s1 || null
+            },
+            salle2: {
+                temperature:       latest['FABLAB_21_22/salle12/all/temperature'] || null,
+                humidite:          latest['FABLAB_21_22/salle12/all/humidite'] || null,
+                lumiere:           latest['FABLAB_21_22/salle12/all/lux'] || null,
+                pm25:              pm25_s2 || null,
+                pm10:              pm10_s2 || null,
+                co2:               null,
+                qualite_air_score: pm25_s2 ? Math.min(500, Math.round(pm25_s2 * 2.0)) : null,
+                qualite_air_label: pm25_s2 ? (pm25_s2 < 12 ? 'Bon' : pm25_s2 < 35 ? 'Modéré' : 'Mauvais') : null
+            }
+        });
+    } catch (err) {
+        console.error('overview error:', err.message);
+        res.status(500).json({ error: err.message });
     }
 });
+
+    ;
 
 app.get('/api/public/history', async (req, res) => {
     try {
