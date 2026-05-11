@@ -300,7 +300,7 @@
     <div class="hgrid">
       <div class="hg v"><div class="hg-l">Temp. moyenne</div><div class="hg-v" id="hs-temp">--</div><div class="hg-s">°C · 2 salles</div></div>
       <div class="hg t"><div class="hg-l">Humidité · A</div><div class="hg-v" id="hs-hum">--</div><div class="hg-s">% HR</div></div>
-      <div class="hg a"><div class="hg-l">CO₂ · Salle B</div><div class="hg-v" id="hs-co2">--</div><div class="hg-s">ppm</div></div>
+      <div class="hg a"><div class="hg-l">PM 2.5 · Salle B</div><div class="hg-v" id="hs-co2">--</div><div class="hg-s">µg/m³</div></div>
       <div class="hg p"><div class="hg-l">Présence · Salle A</div><div class="hg-v" id="hs-occ">--</div><div class="hg-s">personnes</div></div>
     </div>
   </div>
@@ -312,7 +312,7 @@
     <div class="ti"><div class="ti-dot" style="background:var(--accent)"></div>Temp. A <span class="v" id="tk-t1">--°C</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--teal)"></div>Humidité A <span class="v" id="tk-h1">--%</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--amber)"></div>Temp. B <span class="v" id="tk-t2">--°C</span></div>
-    <div class="ti"><div class="ti-dot" style="background:var(--red)"></div>CO₂ B <span class="v" id="tk-co2">-- ppm</span></div>
+    <div class="ti"><div class="ti-dot" style="background:var(--red)"></div>PM2.5 B <span class="v" id="tk-co2">-- µg/m³</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--green)"></div>Lumière A <span class="v" id="tk-l1">-- lux</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--green)"></div>Lumière B <span class="v" id="tk-l2">-- lux</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--violet)"></div>Présence A <span class="v" id="tk-occ">-- pers.</span></div>
@@ -321,7 +321,7 @@
     <div class="ti"><div class="ti-dot" style="background:var(--accent)"></div>Temp. A <span class="v" id="tk-t1b">--°C</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--teal)"></div>Humidité A <span class="v" id="tk-h1b">--%</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--amber)"></div>Temp. B <span class="v" id="tk-t2b">--°C</span></div>
-    <div class="ti"><div class="ti-dot" style="background:var(--red)"></div>CO₂ B <span class="v" id="tk-co2b">-- ppm</span></div>
+    <div class="ti"><div class="ti-dot" style="background:var(--red)"></div>PM2.5 B <span class="v" id="tk-co2b">-- µg/m³</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--green)"></div>Lumière A <span class="v" id="tk-l1b">-- lux</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--green)"></div>Lumière B <span class="v" id="tk-l2b">-- lux</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--violet)"></div>Présence A <span class="v" id="tk-occb">-- pers.</span></div>
@@ -392,7 +392,7 @@
       <div class="sb-item cv"><div class="sb-lbl">Temp. Salle A</div><div class="sb-val" id="sb-t1">--</div><div class="sb-sub">°C intérieur</div></div>
       <div class="sb-item ct"><div class="sb-lbl">Humidité Salle A</div><div class="sb-val" id="sb-h1">--</div><div class="sb-sub">% HR</div></div>
       <div class="sb-item ca"><div class="sb-lbl">Temp. Salle B</div><div class="sb-val" id="sb-t2">--</div><div class="sb-sub">°C intérieur</div></div>
-      <div class="sb-item cr"><div class="sb-lbl">CO₂ Salle B</div><div class="sb-val" id="sb-co2">--</div><div class="sb-sub">ppm</div></div>
+      <div class="sb-item cr"><div class="sb-lbl">PM 2.5 Salle B</div><div class="sb-val" id="sb-co2">--</div><div class="sb-sub">µg/m³</div></div>
       <div class="sb-item cg"><div class="sb-lbl">Qualité air B</div><div class="sb-val" id="sb-air">--</div><div class="sb-sub" id="sb-air-lbl">Indisponible</div></div>
       <div class="sb-item cp"><div class="sb-lbl">Présence Salle A</div><div class="sb-val" id="sb-occ">--</div><div class="sb-sub">personnes</div></div>
       <div class="sb-item ct"><div class="sb-lbl">Radar Salle B</div><div class="sb-val" id="sb-radar">--</div><div class="sb-sub" id="sb-radar-lbl">Indisponible</div></div>
@@ -440,7 +440,7 @@
         </div>
         <div class="rprev" id="prev-b">
           <div class="pk"><span class="pkv" id="pb-t">--</span><span class="pkl">Temp. °C</span></div>
-          <div class="pk"><span class="pkv" id="pb-c">--</span><span class="pkl">CO₂ ppm</span></div>
+          <div class="pk"><span class="pkv" id="pb-c">--</span><span class="pkl">PM2.5 µg/m³</span></div>
           <div class="pk"><span class="pkv" id="pb-a">--</span><span class="pkl">Qualité air</span></div>
           <div class="pk"><span class="pkv" id="pb-radar" style="color:var(--teal)">--</span><span class="pkl">Présence radar</span></div>
         </div>
@@ -449,7 +449,7 @@
             <div class="kt kv"><div class="kl">Température</div><div class="kv2" id="b-t">--<span class="ku">°C</span><span class="trend flat" id="tr-b-t">→</span></div><canvas class="sp" id="sp-b-t"></canvas></div>
             <div class="kt kt2"><div class="kl">Humidité</div><div class="kv2" id="b-h">--<span class="ku">%</span><span class="trend flat" id="tr-b-h">→</span></div><canvas class="sp" id="sp-b-h"></canvas></div>
             <div class="kt ka"><div class="kl">Luminosité</div><div class="kv2" id="b-l">--<span class="ku">lx</span><span class="trend flat" id="tr-b-l">→</span></div><canvas class="sp" id="sp-b-l"></canvas></div>
-            <div class="kt kr"><div class="kl">CO₂</div><div class="kv2" id="b-c">--<span class="ku">ppm</span><span class="trend flat" id="tr-b-c">→</span></div><canvas class="sp" id="sp-b-c"></canvas></div>
+            <div class="kt kr"><div class="kl">PM 2.5</div><div class="kv2" id="b-c">--<span class="ku">µg/m³</span><span class="trend flat" id="tr-b-c">→</span></div><canvas class="sp" id="sp-b-c"></canvas></div>
             <div class="kt kg"><div class="kl">Qualité air</div><div class="kv2" id="b-a">--<span class="ku">/500</span><span class="trend flat" id="tr-b-a">→</span></div><canvas class="sp" id="sp-b-a"></canvas></div>
             <div class="kt kt2"><div class="kl">Radar · Cibles</div><div class="kv2" id="b-radar-nb" style="color:var(--teal)">--<span class="ku">pers.</span></div><div style="margin-top:6px;font-size:.7rem;font-family:var(--m);color:var(--muted)" id="b-radar-pres">Présence : --</div><div style="margin-top:4px;font-size:.68rem;font-family:var(--m);color:var(--muted)" id="b-radar-dist">--</div><div style="margin-top:2px;font-size:.68rem;font-family:var(--m);color:var(--muted)" id="b-radar-speed">--</div></div>
           </div>
@@ -481,8 +481,8 @@
     <div class="hist-charts">
       <div class="hist-card"><div class="hist-card-t">Température</div><div class="hist-card-s" id="hc-temp-sub">Salle A & B</div><canvas class="hcv" id="hchart-temp"></canvas></div>
       <div class="hist-card"><div class="hist-card-t">Humidité</div><div class="hist-card-s" id="hc-hum-sub">Salle A & B</div><canvas class="hcv" id="hchart-hum"></canvas></div>
-      <div class="hist-card"><div class="hist-card-t">CO₂</div><div class="hist-card-s">Salle B</div><canvas class="hcv" id="hchart-co2"></canvas></div>
-      <div class="hist-card"><div class="hist-card-t">Qualité d'air</div><div class="hist-card-s">Salle B</div><canvas class="hcv" id="hchart-air"></canvas></div>
+      <div class="hist-card"><div class="hist-card-t">PM 2.5 · Particules fines</div><div class="hist-card-s" id="hc-pm25-sub">Salle A & B</div><canvas class="hcv" id="hchart-co2"></canvas></div>
+      <div class="hist-card"><div class="hist-card-t">PM 10 · Particules grossières</div><div class="hist-card-s" id="hc-pm10-sub">Salle A & B</div><canvas class="hcv" id="hchart-air"></canvas></div>
     </div>
   </div>
 
@@ -603,7 +603,10 @@ function bigChart(id,s1,c1,s2,c2){
   const{ctx,W,H}=setup(cv);ctx.clearRect(0,0,W,H);
   const all=[s1,s2].filter(Boolean).flatMap(s=>s.map(p=>+p.v).filter(isFinite));
   if(!all.length)return;
-  const mn=Math.min(...all)*.97,mx=Math.max(...all)*1.03,rng=mx-mn||1;
+  const rawMn=Math.min(...all), rawMx=Math.max(...all);
+  const spread=rawMx-rawMn, center=(rawMn+rawMx)/2;
+  const margin=Math.max(spread*0.3, center*0.05, 0.5);
+  const mn=rawMn-margin, mx=rawMx+margin, rng=mx-mn||1;
   for(let i=0;i<=4;i++){
     const y=H-(i/4)*(H-28)-14;
     ctx.strokeStyle='#f1ede6';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(36,y);ctx.lineTo(W,y);ctx.stroke();
@@ -770,8 +773,8 @@ async function loadAndRenderHistory(){
 function renderHistory(){
   const sA=hA.series||{},sB=hB.series||{};
   const showA=histRoom!=='salle2',showB=histRoom!=='salle1';
-  set('hc-temp-sub',histRoom==='salle1'?'Salle A':histRoom==='salle2'?'Salle B':'Salle A & B');
-  set('hc-hum-sub',histRoom==='salle1'?'Salle A':histRoom==='salle2'?'Salle B':'Salle A & B');
+  const lbl=histRoom==='salle1'?'Salle A':histRoom==='salle2'?'Salle B':'Salle A & B';
+  set('hc-temp-sub',lbl);set('hc-hum-sub',lbl);set('hc-pm25-sub',lbl);set('hc-pm10-sub',lbl);
   bigChart('hchart-temp',showA?sA.temperature||[]:[],  '#5b4fcf',showB?sB.temperature||[]:[],'#b45309');
   bigChart('hchart-hum', showA?sA.humidite||[]:[],     '#0f766e',showB?sB.humidite||[]:[],'#b45309');
   bigChart('hchart-co2', sB.co2||[],'#b91c1c');

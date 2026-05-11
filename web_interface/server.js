@@ -401,24 +401,26 @@ app.get('/api/public/history', async (req, res) => {
         const limit = Math.min(240, Math.max(20, Number(req.query.limit || 120)));
 
         if (room === 'salle1') {
-            const [temperature, humidite, lumiere] = await Promise.all([
-                fetchHistoryByPatterns(TOPIC_PATTERNS.salle1.temperature, hours, limit),
-                fetchHistoryByPatterns(TOPIC_PATTERNS.salle1.humidite,    hours, limit),
-                fetchHistoryByPatterns(TOPIC_PATTERNS.salle1.lumiere,     hours, limit)
-            ]);
-            return res.json({ room: 'salle1', hours, series: { temperature, humidite, lumiere } });
-        }
+    const [temperature, humidite, lumiere, pm25, pm10] = await Promise.all([
+        fetchHistoryByPatterns(TOPIC_PATTERNS.salle1.temperature, hours, limit),
+        fetchHistoryByPatterns(TOPIC_PATTERNS.salle1.humidite,    hours, limit),
+        fetchHistoryByPatterns(TOPIC_PATTERNS.salle1.lumiere,     hours, limit),
+        fetchHistoryByPatterns(TOPIC_PATTERNS.salle1.pm25,        hours, limit),
+        fetchHistoryByPatterns(TOPIC_PATTERNS.salle1.pm10,        hours, limit)
+    ]);
+    return res.json({ room: 'salle1', hours, series: { temperature, humidite, lumiere, pm25, pm10 } });
+}
 
         if (room === 'salle2') {
-            const [temperature, humidite, lumiere, co2, air] = await Promise.all([
-                fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.temperature, hours, limit),
-                fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.humidite,    hours, limit),
-                fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.lumiere,     hours, limit),
-                fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.co2,         hours, limit),
-                fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.air,         hours, limit)
-            ]);
-            return res.json({ room: 'salle2', hours, series: { temperature, humidite, lumiere, co2, air } });
-        }
+    const [temperature, humidite, lumiere, pm25, pm10] = await Promise.all([
+        fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.temperature, hours, limit),
+        fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.humidite,    hours, limit),
+        fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.lumiere,     hours, limit),
+        fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.pm25,        hours, limit),
+        fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.pm10,        hours, limit)
+    ]);
+    return res.json({ room: 'salle2', hours, series: { temperature, humidite, lumiere, pm25, pm10 } });
+}
 
         const [salle1Temp, salle2Temp] = await Promise.all([
             fetchHistoryByPatterns(TOPIC_PATTERNS.salle1.temperature, hours, limit),
