@@ -558,7 +558,7 @@ function toggleRoom(id){
   else{
     ['a','b'].forEach(r=>{document.getElementById('card-'+r).classList.remove('open');document.getElementById('prev-'+r).style.display='';});
     c.classList.add('open');p.style.display='none';activeRoom=id;
-    setTimeout(()=>{animateKpis(id);renderRoom(id);},40);
+    setTimeout(()=>{animateKpis(id);setTimeout(()=>renderRoom(id),80);},40);
   }
 }
 
@@ -676,8 +676,8 @@ async function refresh(){
   const[data,ov,a,b]=await Promise.all([
     get('/api/public/overview'),
     get('/api/public/history?room=overview'),
-    get('/api/public/history?room=salle1&hours='+histPeriod),
-    get('/api/public/history?room=salle2&hours='+histPeriod)
+    get('/api/public/history?room=salle1&hours=24&limit=240'),
+    get('/api/public/history?room=salle2&hours=24&limit=240')
   ]);
   hOv=ov||{};hA=a||{};hB=b||{};
   if(data){
@@ -763,7 +763,7 @@ async function refresh(){
   }
   set('sync-lbl','En direct');
   redrawOverview();
-  if(activeRoom)renderRoom(activeRoom);
+  if(activeRoom){renderRoom(activeRoom);setTimeout(()=>drawSensorChart(activeRoom),100);}
   const hp=document.getElementById('panel-history');
   if(hp&&hp.classList.contains('active'))renderHistory();
 }
