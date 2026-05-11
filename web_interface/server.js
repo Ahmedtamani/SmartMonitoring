@@ -377,7 +377,7 @@ app.get('/api/public/overview', async (req, res) => {
                 lumiere:           latest['FABLAB_21_22/salle12/all/lux']         || null,
                 pm25:              pm25_s2 || null,
                 pm10:              pm10_s2 || null,
-                co2:               null,
+                co2: latest['FABLAB_21_22/salle12/all/pm25'] || null,                
                 qualite_air_score: pm25_s2 ? Math.min(500, Math.round(pm25_s2 * 2.0)) : null,
                 qualite_air_label: pm25_s2 ? (pm25_s2 < 12 ? 'Bon' : pm25_s2 < 35 ? 'Modéré' : 'Mauvais') : null,
                 radar: {
