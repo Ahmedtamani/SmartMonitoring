@@ -1,82 +1,111 @@
 services:
 
+  # ── 1. MQTT Broker ───────────────────────────────────────────
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: iot_mosquitto
     ports:
-      - "1883:1883"
-      - "9001:9001"
+      - "1883:1883"   # MQTT TCP
+      - "9001:9001"   # MQTT WebSocket
     volumes:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
       - ./mosquitto/log:/mosquitto/log
     restart: unless-stopped
 
+  # ── 2. Base de données MySQL ─────────────────────────────────
   mysql:
     image: mysql:8.0
     container_name: iot_mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-fablab_monitoring}
-      MYSQL_USER: ${MYSQL_USER:-fablab_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE:      ${MYSQL_DATABASE:-fablab_monitoring}
+      MYSQL_USER:          ${MYSQL_USER:-fablab_user}
+      MYSQL_PASSWORD:      ${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
+  # ── 3. Bridge MQTT → MySQL ───────────────────────────────────
   bridge:
     image: python:3.11-slim
     container_name: iot_bridge
     working_dir: /app
+    command: bash -c "pip install -q -r requirements.txt && python main.py"
     volumes:
       - ./bridge:/app
-    env_file: .env
     environment:
-      DB_HOST: mysql
-    command: >
-      bash -c "pip install -q -r requirements.txt && python main.py"
+      DB_HOST:        mysql
+      DB_USER:        ${DB_USER:-fablab_user}
+      DB_PASS:        ${DB_PASS:-fablab_password}
+      DB_NAME:        ${DB_NAME:-fablab_monitoring}
+      MQTT_BROKER:    ${MQTT_BROKER:-mqtt.univ-cotedazur.fr}
+      MQTT_PORT:      ${MQTT_PORT:-443}
+      MQTT_USER:      ${MQTT_USER:-fablab2122}
+      MQTT_PASS:      ${MQTT_PASS}
+      MQTT_TOPIC:     ${MQTT_TOPIC:-FABLAB_21_22/#}
+      TOPIC_REQUETE:  ${TOPIC_REQUETE:-FABLAB_21_22/WEB/REQUETE}
+      TOPIC_REPONSE:  ${TOPIC_REPONSE:-FABLAB_21_22/WEB/REPONSE}
     depends_on:
       mysql:
         condition: service_healthy
     restart: unless-stopped
 
+  # ── 4. API MQTT (requête/réponse web) ────────────────────────
   api_mqtt:
     image: python:3.11-slim
     container_name: iot_api_mqtt
     working_dir: /app
+    command: bash -c "pip install -q -r requirements.txt && python api_mqtt.py"
     volumes:
       - ./bridge:/app
-    env_file: .env
     environment:
-      DB_HOST: mysql
-    command: >
-      bash -c "pip install -q -r requirements.txt && python api_mqtt.py"
+      DB_HOST:        mysql
+      DB_USER:        ${DB_USER:-fablab_user}
+      DB_PASS:        ${DB_PASS:-fablab_password}
+      DB_NAME:        ${DB_NAME:-fablab_monitoring}
+      MQTT_BROKER:    ${MQTT_BROKER:-mqtt.univ-cotedazur.fr}
+      MQTT_PORT:      ${MQTT_PORT:-443}
+      MQTT_USER:      ${MQTT_USER:-fablab2122}
+      MQTT_PASS:      ${MQTT_PASS}
+      MQTT_TOPIC:     ${MQTT_TOPIC:-FABLAB_21_22/#}
+      TOPIC_REQUETE:  ${TOPIC_REQUETE:-FABLAB_21_22/WEB/REQUETE}
+      TOPIC_REPONSE:  ${TOPIC_REPONSE:-FABLAB_21_22/WEB/REPONSE}
     depends_on:
       mysql:
         condition: service_healthy
     restart: unless-stopped
 
+  # ── 5. Serveur Web (dashboard + API REST) ────────────────────
   web:
     image: node:20-slim
     container_name: iot_web
     working_dir: /app
+    command: bash -c "npm install --silent && node server.js"
     volumes:
       - ./web_interface:/app
-    env_file: .env
-    environment:
-      DB_HOST: mysql
-      WEB_PORT: 3000
-    command: >
-      bash -c "npm install --silent && node server.js"
     ports:
       - "3000:3000"
+    environment:
+      DB_HOST:        mysql
+      DB_USER:        ${DB_USER:-fablab_user}
+      DB_PASS:        ${DB_PASS:-fablab_password}
+      DB_NAME:        ${DB_NAME:-fablab_monitoring}
+      WEB_PORT:       ${WEB_PORT:-3000}
+      MQTT_BROKER:    ${MQTT_BROKER:-mqtt.univ-cotedazur.fr}
+      MQTT_PORT:      ${MQTT_PORT:-443}
+      MQTT_USER:      ${MQTT_USER:-fablab2122}
+      MQTT_PASS:      ${MQTT_PASS}
+      MQTT_TOPIC:     ${MQTT_TOPIC:-FABLAB_21_22/#}
+      TOPIC_REQUETE:  ${TOPIC_REQUETE:-FABLAB_21_22/WEB/REQUETE}
+      TOPIC_REPONSE:  ${TOPIC_REPONSE:-FABLAB_21_22/WEB/REPONSE}
     depends_on:
       mysql:
         condition: service_healthy

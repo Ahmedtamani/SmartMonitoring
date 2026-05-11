@@ -305,7 +305,7 @@
   <div class="hero-in">
     <div>
       <div class="hero-eyebrow">Supervision environnementale · Temps réel</div>
-      <h1>Données vivantes<br>du <em>FabLab</em></h1>
+      <h1>Monitoring<br>du <em>FabLab</em></h1>
       <p class="hero-p">Température, humidité, qualité d'air, luminosité et présence — collectés en continu depuis les capteurs des deux salles.</p>
       <div class="hero-ts">Mise à jour : <strong id="last-upd">chargement…</strong>&nbsp;·&nbsp;<span id="status-msg">Initialisation</span></div>
     </div>
@@ -540,6 +540,7 @@
 let activeRoom=null, histPeriod=6, histRoom='both';
 let hOv={},hA={},hB={};
 const prev={};
+const activeSensor={a:'temp',b:'temp'};
 
 /* TABS */
 function switchTab(id,btn){
@@ -573,14 +574,40 @@ function animateKpis(id){
   set('sc-'+id+'-name','Température');
 }
 
+/* SENSOR SELECT */
+const SENSOR_LABELS={temp:'Température',hum:'Humidité',lux:'Luminosité',pm25:'PM 2.5',pm10:'PM 10'};
+const SENSOR_COLORS={temp:'#5b4fcf',hum:'#0f766e',lux:'#b45309',pm25:'#b91c1c',pm10:'#7c3aed'};
+const SENSOR_KEYS={temp:'temperature',hum:'humidite',lux:'lumiere',pm25:'pm25',pm10:'pm10'};
+
+function selectSensor(room,sensor,tile,event){
+  event.stopPropagation();
+  activeSensor[room]=sensor;
+  document.querySelectorAll('#krow-'+room+' .kt.clickable').forEach(t=>t.classList.remove('selected'));
+  tile.classList.add('selected');
+  set('sc-'+room+'-name',SENSOR_LABELS[sensor]||sensor);
+  drawSensorChart(room);
+}
+
+function drawSensorChart(room){
+  const sensor=activeSensor[room]||'temp';
+  const key=SENSOR_KEYS[sensor];
+  const h=room==='a'?hA:hB;
+  const series=(h.series||{})[key]||[];
+  const color=SENSOR_COLORS[sensor]||'#5b4fcf';
+  bigChart('chart-'+room+'-sensor',series,color);
+  const last=series.slice(-1)[0];
+  if(last)set(room==='a'?'ca-last':'cb-last',new Date(last.t).toLocaleTimeString('fr-FR'));
+}
+
 /* ALERT */
 let alertDismissed=false;
 function checkAlerts(data){
   if(alertDismissed)return;
   const alerts=[];
-  const co2=data.salle2?.co2, air=data.salle2?.qualite_air_score;
+  const pm25b=data.salle2?.pm25, co2=data.salle2?.co2, air=data.salle2?.qualite_air_score;
   const t1=data.salle1?.temperature, t2=data.salle2?.temperature, h1=data.salle1?.humidite;
-  if(co2!=null&&co2>800) alerts.push('CO₂ '+Math.round(co2)+' ppm');
+  if(co2!=null&&co2>1000)   alerts.push('CO₂ '+Math.round(co2)+' ppm');
+  if(pm25b!=null&&pm25b>35) alerts.push('PM2.5 '+Number(pm25b).toFixed(1)+' µg/m³');
   if(air!=null&&air>200)  alerts.push('Qualité air '+Math.round(air)+'/500');
   if(t1!=null&&t1>28)     alerts.push('Temp. A '+Number(t1).toFixed(1)+'°C');
   if(t2!=null&&t2>28)     alerts.push('Temp. B '+Number(t2).toFixed(1)+'°C');
@@ -683,7 +710,8 @@ async function refresh(){
   if(data){
     const t1=data.salle1?.temperature,h1=data.salle1?.humidite,l1=data.salle1?.lumiere;
     const t2=data.salle2?.temperature,h2=data.salle2?.humidite,l2=data.salle2?.lumiere;
-    const co2=data.salle2?.co2,air=data.salle2?.qualite_air_score,airlbl=data.salle2?.qualite_air_label;
+    const pm25b=data.salle2?.pm25,pm10b=data.salle2?.pm10,co2=data.salle2?.co2;
+    const air=data.salle2?.qualite_air_score,airlbl=data.salle2?.qualite_air_label;
     const cam=data.salle1?.camera;
     const occ=cam?.occupancy, occIn=cam?.in, occOut=cam?.out, occTs=cam?.updated_at;
 
@@ -697,7 +725,7 @@ async function refresh(){
     // ticker
     const tp=[
       ['tk-t1','tk-t1b',f(t1)+'°C'],['tk-h1','tk-h1b',f(h1)+'%'],
-      ['tk-t2','tk-t2b',f(t2)+'°C'],['tk-co2','tk-co2b',f(co2,0)+' ppm'],
+      ['tk-t2','tk-t2b',f(t2)+'°C'],['tk-co2','tk-co2b',co2!=null?f(co2,0)+' ppm':'--'],
       ['tk-l1','tk-l1b',f(l1,0)+' lux'],['tk-l2','tk-l2b',f(l2,0)+' lux'],
       ['tk-occ','tk-occb',occ!=null?occ+' pers.':'-- pers.'],
       ['tk-air','tk-airb',air!=null?Math.round(air)+'':'--']
@@ -707,12 +735,14 @@ async function refresh(){
     // previews
     set('pa-t',f(t1));set('pa-h',f(h1));set('pa-l',f(l1,0));
     set('pa-occ',occ!=null?occ+'':'--');
-    set('pb-t',f(t2));set('pb-c',f(co2,0));set('pb-a',air!=null?Math.round(air)+'':'--');
+    set('pb-t',f(t2));set('pb-c',f(pm25b,1));set('pb-a',air!=null?Math.round(air)+'':'--');
 
     // KPIs
+    const pm25a=data.salle1?.pm25,pm10a=data.salle1?.pm10;
     kset('a-t',t1,1,'tr-a-t');kset('a-h',h1,1,'tr-a-h');kset('a-l',l1,0,'tr-a-l');
+    kset('a-pm25',pm25a,1);kset('a-pm10',pm10a,1);
     kset('b-t',t2,1,'tr-b-t');kset('b-h',h2,1,'tr-b-h');kset('b-l',l2,0,'tr-b-l');
-    kset('b-c',co2,0,'tr-b-c');kset('b-a',air,0,'tr-b-a');
+    kset('b-c',pm25b,1,'tr-b-c');kset('b-a',pm10b,1,'tr-b-a');
 
     // occupation Salle A
     if(occ!=null){
@@ -774,19 +804,7 @@ function redrawOverview(){
 }
 
 function renderRoom(id){
-  if(id==='a'){
-    const s=hA.series||{};
-    sparkline('sp-a-t',s.temperature,'#5b4fcf');sparkline('sp-a-h',s.humidite,'#0f766e');sparkline('sp-a-l',s.lumiere,'#b45309');
-    bigChart('chart-a-t',s.temperature||[],'#5b4fcf');
-    const last=(s.temperature||[]).slice(-1)[0];if(last)set('ca-last',new Date(last.t).toLocaleTimeString('fr-FR'));
-  }
-  if(id==='b'){
-    const s=hB.series||{};
-    sparkline('sp-b-t',s.temperature,'#5b4fcf');sparkline('sp-b-h',s.humidite,'#0f766e');sparkline('sp-b-l',s.lumiere,'#b45309');
-    sparkline('sp-b-c',s.co2,'#b91c1c');sparkline('sp-b-a',s.air,'#b45309');
-    bigChart('chart-b-c',s.co2||[],'#b91c1c');
-    const last=(s.co2||[]).slice(-1)[0];if(last)set('cb-last',new Date(last.t).toLocaleTimeString('fr-FR'));
-  }
+  drawSensorChart(id);
 }
 
 /* HISTORY */
@@ -803,8 +821,8 @@ function renderHistory(){
   set('hc-temp-sub',lbl);set('hc-hum-sub',lbl);set('hc-pm25-sub',lbl);set('hc-pm10-sub',lbl);
   bigChart('hchart-temp',showA?sA.temperature||[]:[],  '#5b4fcf',showB?sB.temperature||[]:[],'#b45309');
   bigChart('hchart-hum', showA?sA.humidite||[]:[],     '#0f766e',showB?sB.humidite||[]:[],'#b45309');
-  bigChart('hchart-co2', sB.co2||[],'#b91c1c');
-  bigChart('hchart-air', sB.air||[],'#b45309');
+  bigChart('hchart-co2', showA?sA.pm25||[]:[],  '#b91c1c',showB?sB.pm25||[]:[],'#7c3aed');
+  bigChart('hchart-air', showA?sA.pm10||[]:[],  '#b45309',showB?sB.pm10||[]:[],'#7c3aed');
 }
 
 /* PRINT */

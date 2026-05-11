@@ -131,11 +131,11 @@ const TOPIC_PATTERNS = {
         cameraIa:    []
     },
     salle2: {
-        temperature: ['%fablab_21_22/salle12/all/temperature%'],
-        humidite:    ['%fablab_21_22/salle12/all/humidite%'],
-        lumiere:     ['%fablab_21_22/salle12/all/lux%'],
-        pm25:        ['%fablab_21_22/salle12/all/pm25%'],
-        pm10:        ['%fablab_21_22/salle12/all/pm10%'],
+        temperature: ['%fablab_21_22/salle22/all/temperature%', '%fablab_21_22/salle12/all/temperature%'],
+        humidite:    ['%fablab_21_22/salle22/all/humidite%',    '%fablab_21_22/salle12/all/humidite%'],
+        lumiere:     ['%fablab_21_22/salle22/all/lux%',         '%fablab_21_22/salle12/all/lux%'],
+        pm25:        ['%fablab_21_22/salle22/all/pm25%',        '%fablab_21_22/salle12/all/pm25%'],
+        pm10:        ['%fablab_21_22/salle22/all/pm10%',        '%fablab_21_22/salle12/all/pm10%'],
         co2:         [],
         air:         [],
         radarNb:       ['%fablab_21_22/radar/salle104/nb%'],
@@ -196,20 +196,29 @@ async function fetchLatestTextByPatterns(patterns) {
 
 async function fetchHistoryByPatterns(patterns, hours = 24, limit = 120) {
     if (!patterns || patterns.length === 0) return [];
+    const likeClause = patterns.map(() => 'LOWER(topic) LIKE ?').join(' OR ');
+    const lowerPatterns = patterns.map(p => p.toLowerCase());
     try {
         const since = new Date(Date.now() - hours * 60 * 60 * 1000);
-        const sql = `
-            SELECT value, created_at
-            FROM sensor_data
-            WHERE value IS NOT NULL
-              AND created_at >= ?
-              AND (${patterns.map(() => 'LOWER(topic) LIKE ?').join(' OR ')})
-            ORDER BY created_at DESC
-            LIMIT ?
-        `;
-        const values = [since, ...patterns.map(p => p.toLowerCase()), Number(limit)];
-        const [rows] = await pool.query(sql, values);
-        return rows.reverse().map(row => ({ t: row.created_at, v: parseNumeric(row.value) }));
+        const [rows] = await pool.query(
+            `SELECT value, created_at FROM sensor_data
+             WHERE value IS NOT NULL AND created_at >= ?
+               AND (${likeClause})
+             ORDER BY created_at DESC LIMIT ?`,
+            [since, ...lowerPatterns, Number(limit)]
+        );
+        if (rows.length >= 2) {
+            return rows.reverse().map(row => ({ t: row.created_at, v: parseNumeric(row.value) }));
+        }
+        // Fallback : pas assez de points dans la fenêtre → derniers N relevés sans contrainte temporelle
+        const [fallback] = await pool.query(
+            `SELECT value, created_at FROM sensor_data
+             WHERE value IS NOT NULL
+               AND (${likeClause})
+             ORDER BY created_at DESC LIMIT ?`,
+            [...lowerPatterns, Number(limit)]
+        );
+        return fallback.reverse().map(row => ({ t: row.created_at, v: parseNumeric(row.value) }));
     } catch (error) {
         console.warn('⚠️ History query fallback:', error.code || error.message);
         return [];
@@ -328,6 +337,11 @@ app.get('/api/public/overview', async (req, res) => {
             'FABLAB_21_22/envir/salle_104/lux',
             'FABLAB_21_22/envir/salle_104/pm25',
             'FABLAB_21_22/envir/salle_104/pm10',
+            'FABLAB_21_22/salle22/all/temperature',
+            'FABLAB_21_22/salle22/all/humidite',
+            'FABLAB_21_22/salle22/all/lux',
+            'FABLAB_21_22/salle22/all/pm25',
+            'FABLAB_21_22/salle22/all/pm10',
             'FABLAB_21_22/salle12/all/temperature',
             'FABLAB_21_22/salle12/all/humidite',
             'FABLAB_21_22/salle12/all/lux',
@@ -353,8 +367,10 @@ app.get('/api/public/overview', async (req, res) => {
             if (!latest[row.topic]) latest[row.topic] = row.value;
         }
 
-        const pm25_s2 = latest['FABLAB_21_22/salle12/all/pm25'];
-        const pm10_s2 = latest['FABLAB_21_22/salle12/all/pm10'];
+        // Préférer salle22 (capteur actif) puis fallback salle12
+        const pm25_s2 = latest['FABLAB_21_22/salle22/all/pm25'] ?? latest['FABLAB_21_22/salle12/all/pm25'];
+        const pm10_s2 = latest['FABLAB_21_22/salle22/all/pm10'] ?? latest['FABLAB_21_22/salle12/all/pm10'];
+        const co2_s2  = null; // pas de capteur CO2 réel disponible
 
         res.json({
             generated_at: new Date().toISOString(),
@@ -372,14 +388,14 @@ app.get('/api/public/overview', async (req, res) => {
                 }
             },
             salle2: {
-                temperature:       latest['FABLAB_21_22/salle12/all/temperature'] || null,
-                humidite:          latest['FABLAB_21_22/salle12/all/humidite']    || null,
-                lumiere:           latest['FABLAB_21_22/salle12/all/lux']         || null,
-                pm25:              pm25_s2 || null,
-                pm10:              pm10_s2 || null,
-                co2: latest['FABLAB_21_22/salle12/all/pm25'] || null,                
-                qualite_air_score: pm25_s2 ? Math.min(500, Math.round(pm25_s2 * 2.0)) : null,
-                qualite_air_label: pm25_s2 ? (pm25_s2 < 12 ? 'Bon' : pm25_s2 < 35 ? 'Modéré' : 'Mauvais') : null,
+                temperature:       latest['FABLAB_21_22/salle22/all/temperature'] ?? latest['FABLAB_21_22/salle12/all/temperature'] ?? null,
+                humidite:          latest['FABLAB_21_22/salle22/all/humidite']    ?? latest['FABLAB_21_22/salle12/all/humidite']    ?? null,
+                lumiere:           latest['FABLAB_21_22/salle22/all/lux']         ?? latest['FABLAB_21_22/salle12/all/lux']         ?? null,
+                pm25:              pm25_s2 ?? null,
+                pm10:              pm10_s2 ?? null,
+                co2:               co2_s2,
+                qualite_air_score: pm25_s2 != null ? Math.min(500, Math.round(pm25_s2 * 2.0)) : null,
+                qualite_air_label: pm25_s2 != null ? (pm25_s2 < 12 ? 'Bon' : pm25_s2 < 35 ? 'Modéré' : 'Mauvais') : null,
                 radar: {
                     nb:                latest['FABLAB_21_22/RADAR/salle104/nb'] ?? null,
                     presence:          latest['FABLAB_21_22/RADAR/salle104/presence'] ?? null,
@@ -397,7 +413,7 @@ app.get('/api/public/overview', async (req, res) => {
 app.get('/api/public/history', async (req, res) => {
     try {
         const room  = String(req.query.room || 'overview').toLowerCase();
-        const hours = Math.min(48, Math.max(1, Number(req.query.hours || 24)));
+        const hours = Math.min(720, Math.max(1, Number(req.query.hours || 24)));
         const limit = Math.min(240, Math.max(20, Number(req.query.limit || 120)));
 
         if (room === 'salle1') {
