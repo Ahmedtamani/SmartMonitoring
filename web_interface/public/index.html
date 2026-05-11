@@ -395,6 +395,7 @@
       <div class="sb-item cr"><div class="sb-lbl">CO₂ Salle B</div><div class="sb-val" id="sb-co2">--</div><div class="sb-sub">ppm</div></div>
       <div class="sb-item cg"><div class="sb-lbl">Qualité air B</div><div class="sb-val" id="sb-air">--</div><div class="sb-sub" id="sb-air-lbl">Indisponible</div></div>
       <div class="sb-item cp"><div class="sb-lbl">Présence Salle A</div><div class="sb-val" id="sb-occ">--</div><div class="sb-sub">personnes</div></div>
+      <div class="sb-item ct"><div class="sb-lbl">Radar Salle B</div><div class="sb-val" id="sb-radar">--</div><div class="sb-sub" id="sb-radar-lbl">Indisponible</div></div>
     </div>
   </div>
 
@@ -441,6 +442,7 @@
           <div class="pk"><span class="pkv" id="pb-t">--</span><span class="pkl">Temp. °C</span></div>
           <div class="pk"><span class="pkv" id="pb-c">--</span><span class="pkl">CO₂ ppm</span></div>
           <div class="pk"><span class="pkv" id="pb-a">--</span><span class="pkl">Qualité air</span></div>
+          <div class="pk"><span class="pkv" id="pb-radar" style="color:var(--teal)">--</span><span class="pkl">Présence radar</span></div>
         </div>
         <div class="rpanel" id="rpanel-b">
           <div class="krow" id="krow-b">
@@ -449,6 +451,7 @@
             <div class="kt ka"><div class="kl">Luminosité</div><div class="kv2" id="b-l">--<span class="ku">lx</span><span class="trend flat" id="tr-b-l">→</span></div><canvas class="sp" id="sp-b-l"></canvas></div>
             <div class="kt kr"><div class="kl">CO₂</div><div class="kv2" id="b-c">--<span class="ku">ppm</span><span class="trend flat" id="tr-b-c">→</span></div><canvas class="sp" id="sp-b-c"></canvas></div>
             <div class="kt kg"><div class="kl">Qualité air</div><div class="kv2" id="b-a">--<span class="ku">/500</span><span class="trend flat" id="tr-b-a">→</span></div><canvas class="sp" id="sp-b-a"></canvas></div>
+            <div class="kt kt2"><div class="kl">Radar · Cibles</div><div class="kv2" id="b-radar-nb" style="color:var(--teal)">--<span class="ku">pers.</span></div><div style="margin-top:6px;font-size:.7rem;font-family:var(--m);color:var(--muted)" id="b-radar-pres">Présence : --</div><div style="margin-top:4px;font-size:.68rem;font-family:var(--m);color:var(--muted)" id="b-radar-dist">--</div><div style="margin-top:2px;font-size:.68rem;font-family:var(--m);color:var(--muted)" id="b-radar-speed">--</div></div>
           </div>
           <div class="rchart"><div class="rct">CO₂ Salle B · 24h <span id="cb-last">--</span></div><canvas class="rcv" id="chart-b-c"></canvas></div>
           <div class="locked">🔒 &nbsp;<strong>Radar + Infrarouge</strong> — <span class="lbadge">Administration</span></div>
@@ -701,6 +704,17 @@ async function refresh(){
     set('sb-t2',t2!=null?f(t2)+'°C':'--');set('sb-co2',co2!=null?f(co2,0)+' ppm':'--');
     set('sb-air',air!=null?Math.round(air)+'':'--');set('sb-air-lbl',airlbl||'Indisponible');
     set('sb-occ',occ!=null?occ+' pers.':'--');
+
+    // radar Salle B
+    const radar=data.salle2?.radar;
+    const rNb=radar?.nb, rPres=radar?.presence, rDist=radar?.distance_cm, rSpeed=radar?.vitesse_ms;
+    set('pb-radar',rPres!=null?(rPres?'Détecté':'Libre'):'--');
+    if(rNb!=null){const el=document.getElementById('b-radar-nb');if(el&&el.childNodes[0])el.childNodes[0].textContent=rNb;}
+    set('b-radar-pres','Présence : '+(rPres!=null?(rPres?'✅ Oui':'❌ Non'):'--'));
+    set('b-radar-dist',rDist!=null?'Distance : '+Number(rDist).toFixed(0)+' cm':'Distance : --');
+    set('b-radar-speed',rSpeed!=null?'Vitesse : '+Number(rSpeed).toFixed(2)+' m/s':'Vitesse : --');
+    set('sb-radar',rNb!=null?rNb+' cible(s)':'--');
+    set('sb-radar-lbl',rPres!=null?(rPres?'Présence détectée':'Salle libre'):'Indisponible');
 
     // ring
     drawRing(air);set('ring-val',air!=null?Math.round(air):'--');

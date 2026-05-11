@@ -138,9 +138,10 @@ const TOPIC_PATTERNS = {
         pm10:        ['%fablab_21_22/salle12/all/pm10%'],
         co2:         [],
         air:         [],
-        radarNb:     ['%fablab_21_22/radar/salle104/nb%'],
-        radarDist:   ['%fablab_21_22/radar/salle104/c1_dist_cm%'],
-        radarSpeed:  ['%fablab_21_22/radar/salle104/c1_vitesse%'],
+        radarNb:       ['%fablab_21_22/radar/salle104/nb%'],
+        radarPresence: ['%fablab_21_22/radar/salle104/presence%'],
+        radarDist:     ['%fablab_21_22/radar/salle104/c1_dist_cm%'],
+        radarSpeed:    ['%fablab_21_22/radar/salle104/c1_vitesse%'],
         cameraInfra: []
     }
 };
@@ -331,7 +332,11 @@ app.get('/api/public/overview', async (req, res) => {
             'FABLAB_21_22/salle12/all/humidite',
             'FABLAB_21_22/salle12/all/lux',
             'FABLAB_21_22/salle12/all/pm25',
-            'FABLAB_21_22/salle12/all/pm10'
+            'FABLAB_21_22/salle12/all/pm10',
+            'FABLAB_21_22/RADAR/salle104/nb',
+            'FABLAB_21_22/RADAR/salle104/presence',
+            'FABLAB_21_22/RADAR/salle104/c1_dist_cm',
+            'FABLAB_21_22/RADAR/salle104/c1_vitesse'
         ];
 
         const [rows] = await pool.query(
@@ -374,7 +379,13 @@ app.get('/api/public/overview', async (req, res) => {
                 pm10:              pm10_s2 || null,
                 co2:               null,
                 qualite_air_score: pm25_s2 ? Math.min(500, Math.round(pm25_s2 * 2.0)) : null,
-                qualite_air_label: pm25_s2 ? (pm25_s2 < 12 ? 'Bon' : pm25_s2 < 35 ? 'Modéré' : 'Mauvais') : null
+                qualite_air_label: pm25_s2 ? (pm25_s2 < 12 ? 'Bon' : pm25_s2 < 35 ? 'Modéré' : 'Mauvais') : null,
+                radar: {
+                    nb:                latest['FABLAB_21_22/RADAR/salle104/nb'] ?? null,
+                    presence:          latest['FABLAB_21_22/RADAR/salle104/presence'] ?? null,
+                    distance_cm:      latest['FABLAB_21_22/RADAR/salle104/c1_dist_cm'] ?? null,
+                    vitesse_ms:       latest['FABLAB_21_22/RADAR/salle104/c1_vitesse'] ?? null
+                }
             }
         });
     } catch (err) {
