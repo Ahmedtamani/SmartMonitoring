@@ -432,11 +432,11 @@
         </div>
         <div class="rpanel" id="rpanel-a">
           <div class="krow" id="krow-a">
-            <div class="kt kv clickable selected" onclick="selectSensor('a','temp',this)" data-sensor="temp"><div class="kl">Température</div><div class="kv2" id="a-t">--<span class="ku">°C</span><span class="trend flat" id="tr-a-t">→</span></div></div>
-            <div class="kt kt2 clickable" onclick="selectSensor('a','hum',this)" data-sensor="hum"><div class="kl">Humidité</div><div class="kv2" id="a-h">--<span class="ku">%</span><span class="trend flat" id="tr-a-h">→</span></div></div>
-            <div class="kt ka clickable" onclick="selectSensor('a','lux',this)" data-sensor="lux"><div class="kl">Luminosité</div><div class="kv2" id="a-l">--<span class="ku">lx</span><span class="trend flat" id="tr-a-l">→</span></div></div>
-            <div class="kt kp clickable" onclick="selectSensor('a','pm25',this)" data-sensor="pm25"><div class="kl">PM 2.5</div><div class="kv2" id="a-pm25">--<span class="ku">µg/m³</span></div></div>
-            <div class="kt kg clickable" onclick="selectSensor('a','pm10',this)" data-sensor="pm10"><div class="kl">PM 10</div><div class="kv2" id="a-pm10">--<span class="ku">µg/m³</span></div></div>
+            <div class="kt kv clickable selected" onclick="selectSensor('a','temp',this,event)" data-sensor="temp"><div class="kl">Température</div><div class="kv2" id="a-t">--<span class="ku">°C</span><span class="trend flat" id="tr-a-t">→</span></div></div>
+            <div class="kt kt2 clickable" onclick="selectSensor('a','hum',this,event)" data-sensor="hum"><div class="kl">Humidité</div><div class="kv2" id="a-h">--<span class="ku">%</span><span class="trend flat" id="tr-a-h">→</span></div></div>
+            <div class="kt ka clickable" onclick="selectSensor('a','lux',this,event)" data-sensor="lux"><div class="kl">Luminosité</div><div class="kv2" id="a-l">--<span class="ku">lx</span><span class="trend flat" id="tr-a-l">→</span></div></div>
+            <div class="kt kp clickable" onclick="selectSensor('a','pm25',this,event)" data-sensor="pm25"><div class="kl">PM 2.5</div><div class="kv2" id="a-pm25">--<span class="ku">µg/m³</span></div></div>
+            <div class="kt kg clickable" onclick="selectSensor('a','pm10',this,event)" data-sensor="pm10"><div class="kl">PM 10</div><div class="kv2" id="a-pm10">--<span class="ku">µg/m³</span></div></div>
             <div class="kt kp"><div class="kl">Présence caméra</div><div class="kv2" id="a-occ" style="color:var(--violet)">--<span class="ku">pers.</span></div><div class="occ-mini"><span class="en" id="a-occ-in">↑ --</span><span class="so" id="a-occ-out">↓ --</span></div></div>
           </div>
           <div class="sensor-chart" id="sc-a">
@@ -463,11 +463,11 @@
         </div>
         <div class="rpanel" id="rpanel-b">
           <div class="krow" id="krow-b">
-            <div class="kt kv clickable selected" onclick="selectSensor('b','temp',this)" data-sensor="temp"><div class="kl">Température</div><div class="kv2" id="b-t">--<span class="ku">°C</span><span class="trend flat" id="tr-b-t">→</span></div></div>
-            <div class="kt kt2 clickable" onclick="selectSensor('b','hum',this)" data-sensor="hum"><div class="kl">Humidité</div><div class="kv2" id="b-h">--<span class="ku">%</span><span class="trend flat" id="tr-b-h">→</span></div></div>
-            <div class="kt ka clickable" onclick="selectSensor('b','lux',this)" data-sensor="lux"><div class="kl">Luminosité</div><div class="kv2" id="b-l">--<span class="ku">lx</span><span class="trend flat" id="tr-b-l">→</span></div></div>
-            <div class="kt kr clickable" onclick="selectSensor('b','pm25',this)" data-sensor="pm25"><div class="kl">PM 2.5</div><div class="kv2" id="b-c">--<span class="ku">µg/m³</span><span class="trend flat" id="tr-b-c">→</span></div></div>
-            <div class="kt kg clickable" onclick="selectSensor('b','pm10',this)" data-sensor="pm10"><div class="kl">PM 10</div><div class="kv2" id="b-a">--<span class="ku">µg/m³</span><span class="trend flat" id="tr-b-a">→</span></div></div>
+            <div class="kt kv clickable selected" onclick="selectSensor('b','temp',this,event)" data-sensor="temp"><div class="kl">Température</div><div class="kv2" id="b-t">--<span class="ku">°C</span><span class="trend flat" id="tr-b-t">→</span></div></div>
+            <div class="kt kt2 clickable" onclick="selectSensor('b','hum',this,event)" data-sensor="hum"><div class="kl">Humidité</div><div class="kv2" id="b-h">--<span class="ku">%</span><span class="trend flat" id="tr-b-h">→</span></div></div>
+            <div class="kt ka clickable" onclick="selectSensor('b','lux',this,event)" data-sensor="lux"><div class="kl">Luminosité</div><div class="kv2" id="b-l">--<span class="ku">lx</span><span class="trend flat" id="tr-b-l">→</span></div></div>
+            <div class="kt kr clickable" onclick="selectSensor('b','pm25',this,event)" data-sensor="pm25"><div class="kl">PM 2.5</div><div class="kv2" id="b-c">--<span class="ku">µg/m³</span><span class="trend flat" id="tr-b-c">→</span></div></div>
+            <div class="kt kg clickable" onclick="selectSensor('b','pm10',this,event)" data-sensor="pm10"><div class="kl">PM 10</div><div class="kv2" id="b-a">--<span class="ku">µg/m³</span><span class="trend flat" id="tr-b-a">→</span></div></div>
             <div class="kt kt2"><div class="kl">Radar · Cibles</div><div class="kv2" id="b-radar-nb" style="color:var(--teal)">--<span class="ku">pers.</span></div><div style="margin-top:6px;font-size:.7rem;font-family:var(--m);color:var(--muted)" id="b-radar-pres">Présence : --</div><div style="margin-top:4px;font-size:.68rem;font-family:var(--m);color:var(--muted)" id="b-radar-dist">--</div><div style="margin-top:2px;font-size:.68rem;font-family:var(--m);color:var(--muted)" id="b-radar-speed">--</div></div>
           </div>
           <div class="sensor-chart" id="sc-b">
