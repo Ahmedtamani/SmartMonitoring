@@ -15,6 +15,7 @@
       --amber:#b45309; --amber-l:#fffbeb;
       --green:#15803d; --green-l:#f0fdf4;
       --red:#b91c1c; --red-l:#fef2f2;
+      --violet:#7c3aed;
       --r:14px; --r2:10px;
       --sh:0 1px 2px rgba(0,0,0,.04),0 3px 12px rgba(0,0,0,.06);
       --sh2:0 6px 28px rgba(0,0,0,.1);
@@ -24,35 +25,19 @@
     html{scroll-behavior:smooth}
     body{background:var(--bg);color:var(--ink);font-family:var(--f);-webkit-font-smoothing:antialiased}
 
-    /* ── ALERT BANNER ── */
-    .alert-bar{
-      display:none;
-      background:var(--red-l);border-bottom:2px solid var(--red);
-      padding:10px 32px;
-    }
+    /* ALERT */
+    .alert-bar{display:none;background:var(--red-l);border-bottom:2px solid var(--red);padding:10px 32px}
     .alert-bar.show{display:block;animation:slideDown .4s ease both}
     @keyframes slideDown{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:translateY(0)}}
-    .alert-in{
-      max-width:1280px;margin:0 auto;
-      display:flex;align-items:center;gap:10px;
-      font-size:.82rem;color:var(--red);
-    }
+    .alert-in{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--red)}
     .alert-icon{font-size:1rem}
     .alert-msg{flex:1;font-weight:500}
-    .alert-close{
-      width:22px;height:22px;border-radius:50%;border:1px solid rgba(185,28,28,.3);
-      background:transparent;cursor:pointer;color:var(--red);font-size:.75rem;
-      display:grid;place-items:center;transition:background .15s;
-    }
+    .alert-close{width:22px;height:22px;border-radius:50%;border:1px solid rgba(185,28,28,.3);background:transparent;cursor:pointer;color:var(--red);font-size:.75rem;display:grid;place-items:center;transition:background .15s}
     .alert-close:hover{background:rgba(185,28,28,.1)}
     .alert-items{display:flex;gap:14px;flex-wrap:wrap;margin-top:2px}
-    .alert-chip{
-      padding:2px 10px;border-radius:999px;
-      background:rgba(185,28,28,.1);border:1px solid rgba(185,28,28,.2);
-      font-size:.72rem;font-weight:600;color:var(--red);
-    }
+    .alert-chip{padding:2px 10px;border-radius:999px;background:rgba(185,28,28,.1);border:1px solid rgba(185,28,28,.2);font-size:.72rem;font-weight:600;color:var(--red)}
 
-    /* ── NAV ── */
+    /* NAV */
     nav{background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
     .nav-in{max-width:1280px;margin:0 auto;padding:0 32px;height:58px;display:flex;align-items:center;justify-content:space-between}
     .nav-brand{display:flex;align-items:center;gap:10px}
@@ -70,7 +55,7 @@
     .nalink{font-size:.74rem;color:var(--muted);text-decoration:none;font-weight:500;transition:color .15s}
     .nalink:hover{color:var(--accent)}
 
-    /* ── HERO ── */
+    /* HERO */
     .hero{background:var(--white);border-bottom:1px solid var(--border);padding:48px 32px 44px}
     .hero-in{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1.2fr 1fr;gap:60px;align-items:center}
     .hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-family:var(--m);margin-bottom:16px}
@@ -84,13 +69,13 @@
     .hg{border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;background:var(--bg);position:relative;overflow:hidden;transition:box-shadow .2s}
     .hg:hover{box-shadow:var(--sh2)}
     .hg::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
-    .hg.v{--c:var(--accent)}.hg.t{--c:var(--teal)}.hg.a{--c:var(--amber)}.hg.g{--c:var(--green)}
+    .hg.v{--c:var(--accent)}.hg.t{--c:var(--teal)}.hg.a{--c:var(--amber)}.hg.g{--c:var(--green)}.hg.p{--c:var(--violet)}
     .hg::before{background:var(--c)}
     .hg-l{font-size:.69rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-family:var(--m);margin-bottom:8px}
     .hg-v{font-family:var(--fs);font-size:1.75rem;font-weight:800;color:var(--c);line-height:1}
     .hg-s{font-size:.7rem;color:var(--muted);margin-top:5px}
 
-    /* ── TICKER ── */
+    /* TICKER */
     .ticker{background:var(--bg2);border-bottom:1px solid var(--border);height:34px;overflow:hidden;display:flex;align-items:center}
     .ticker-track{display:flex;animation:tick 30s linear infinite;white-space:nowrap}
     .ticker-track:hover{animation-play-state:paused}
@@ -99,28 +84,23 @@
     .ti-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
     .ti .v{color:var(--ink);font-weight:500}
 
-    /* ── MAIN ── */
+    /* MAIN */
     .main{max-width:1280px;margin:0 auto;padding:36px 32px 60px}
 
-    /* ── TAB NAV ── */
+    /* TABS */
     .tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:5px;width:fit-content;box-shadow:var(--sh)}
-    .tab{
-      padding:8px 20px;border-radius:10px;border:none;background:transparent;
-      font-family:var(--f);font-size:.82rem;font-weight:500;color:var(--muted);
-      cursor:pointer;transition:all .2s;
-    }
+    .tab{padding:8px 20px;border-radius:10px;border:none;background:transparent;font-family:var(--f);font-size:.82rem;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s}
     .tab.active{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(91,79,207,.3)}
     .tab:hover:not(.active){background:var(--bg);color:var(--ink)}
 
-    /* ── SECTION HEAD ── */
+    /* SECTION HEAD */
     .sh{display:flex;align-items:center;gap:10px;margin-bottom:14px}
     .sh-t{font-family:var(--fs);font-size:.8rem;font-weight:700;letter-spacing:.04em;color:var(--ink)}
     .sh-l{flex:1;height:1px;background:var(--border)}
 
-    /* PANELS */
     .panel{display:none}.panel.active{display:block}
 
-    /* ── CHART AREA ── */
+    /* CHART AREA */
     .chart-area{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:32px}
     .card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;box-shadow:var(--sh)}
     .chead{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
@@ -131,7 +111,7 @@
     .ld2{width:7px;height:7px;border-radius:50%;flex-shrink:0}
     canvas.big{width:100%;height:180px;display:block}
 
-    /* ring */
+    /* RING */
     .ring-card{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 20px;gap:2px}
     canvas.ring{width:120px;height:120px;flex-shrink:0;transition:filter .6s ease}
     .rv{font-family:var(--fs);font-size:1.9rem;font-weight:800;color:var(--ink);margin-top:6px;transition:color .6s ease}
@@ -141,7 +121,21 @@
     .rmod{background:var(--amber-l);color:var(--amber)}
     .rbad{background:var(--red-l);color:var(--red)}
 
-    /* ── ROOM CARDS ── */
+    /* OCCUPANCY CARD dans vue générale */
+    .occ-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;box-shadow:var(--sh);display:flex;align-items:center;gap:20px}
+    .occ-icon{font-size:2rem;flex-shrink:0}
+    .occ-main{}
+    .occ-lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-family:var(--m);margin-bottom:6px}
+    .occ-num{font-family:var(--fs);font-size:2.8rem;font-weight:800;color:var(--violet);line-height:1}
+    .occ-sub{font-size:.72rem;color:var(--muted);margin-top:4px}
+    .occ-stats{display:flex;gap:16px;margin-top:12px}
+    .occ-stat{display:flex;flex-direction:column;align-items:center;gap:2px}
+    .occ-stat .n{font-family:var(--m);font-size:1.1rem;font-weight:600}
+    .occ-stat .n.in{color:var(--green)}
+    .occ-stat .n.out{color:var(--red)}
+    .occ-stat .l{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+
+    /* ROOMS */
     .rooms{display:grid;grid-template-columns:1fr 1fr;gap:14px}
     .rc{background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;cursor:pointer;transition:border-color .2s,box-shadow .2s}
     .rc:hover{box-shadow:var(--sh2)}
@@ -165,13 +159,9 @@
     .rc.open .rpanel{display:block}
     @keyframes fadeUp{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 
-    /* ── KPI TILES ── */
+    /* KPI TILES */
     .krow{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:9px;margin-bottom:12px}
-    .kt{
-      background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);
-      padding:12px 13px;position:relative;overflow:hidden;
-      opacity:0;transform:translateY(10px);
-    }
+    .kt{background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);padding:12px 13px;position:relative;overflow:hidden;opacity:0;transform:translateY(10px)}
     .kt.visible{animation:ktin .4s ease forwards}
     @keyframes ktin{to{opacity:1;transform:translateY(0)}}
     .kt::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r2) var(--r2) 0 0}
@@ -180,17 +170,23 @@
     .kt.ka::before{background:var(--amber)}
     .kt.kg::before{background:var(--green)}
     .kt.kr::before{background:var(--red)}
+    .kt.kp::before{background:var(--violet)}
     .kl{font-size:.67rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px}
     .kv2{font-family:var(--fs);font-size:1.45rem;font-weight:800;color:var(--ink);line-height:1;display:flex;align-items:baseline;gap:4px}
     .kv2.an{animation:pop .4s ease}
     @keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
     .ku{font-size:.68rem;font-weight:400;color:var(--muted);margin-left:2px}
-    /* trend arrow */
     .trend{font-size:.75rem;font-weight:700;line-height:1}
     .trend.up{color:var(--red)}
     .trend.down{color:var(--green)}
     .trend.flat{color:var(--muted)}
     canvas.sp{display:block;width:100%;height:32px;margin-top:7px}
+
+    /* occupancy mini dans krow */
+    .occ-mini{display:flex;gap:8px;margin-top:6px}
+    .occ-mini span{font-size:.68rem;font-family:var(--m);padding:2px 7px;border-radius:4px}
+    .occ-mini .en{background:var(--green-l);color:var(--green)}
+    .occ-mini .so{background:var(--red-l);color:var(--red)}
 
     .rchart{background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);padding:13px 15px;margin-bottom:10px}
     .rct{font-size:.76rem;font-weight:600;color:var(--muted);margin-bottom:9px;display:flex;justify-content:space-between}
@@ -199,15 +195,15 @@
     .locked{display:flex;align-items:center;gap:9px;padding:10px 13px;border:1px dashed var(--border);border-radius:var(--r2);font-size:.82rem;color:var(--muted)}
     .lbadge{padding:2px 8px;background:var(--bg2);border-radius:4px;font-size:.62rem;font-weight:600;color:var(--muted)}
 
-    /* ── SUMMARY BAR ── */
-    .sumbar{margin-top:32px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:20px 24px;box-shadow:var(--sh);display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:20px}
+    /* SUMMARY BAR */
+    .sumbar{margin-top:32px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:20px 24px;box-shadow:var(--sh);display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:20px}
     .sb-item{display:flex;flex-direction:column;gap:4px;padding-left:14px;border-left:3px solid var(--border)}
-    .sb-item.cv{border-left-color:var(--accent)}.sb-item.ct{border-left-color:var(--teal)}.sb-item.ca{border-left-color:var(--amber)}.sb-item.cg{border-left-color:var(--green)}.sb-item.cr{border-left-color:var(--red)}
+    .sb-item.cv{border-left-color:var(--accent)}.sb-item.ct{border-left-color:var(--teal)}.sb-item.ca{border-left-color:var(--amber)}.sb-item.cg{border-left-color:var(--green)}.sb-item.cr{border-left-color:var(--red)}.sb-item.cp{border-left-color:var(--violet)}
     .sb-lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-family:var(--m)}
     .sb-val{font-family:var(--fs);font-size:1.3rem;font-weight:800;color:var(--ink)}
     .sb-sub{font-size:.74rem;color:var(--muted)}
 
-    /* ── HISTORY PANEL ── */
+    /* HISTORY */
     .hist-controls{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
     .period-tabs{display:flex;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);padding:3px}
     .ptab{padding:5px 16px;border-radius:8px;border:none;background:transparent;font-family:var(--f);font-size:.78rem;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s}
@@ -221,7 +217,7 @@
     .hist-card-s{font-size:.72rem;color:var(--muted);margin-bottom:14px}
     canvas.hcv{width:100%;height:220px;display:block}
 
-    /* ── PRINT MODAL ── */
+    /* PRINT MODAL */
     .print-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
     .print-overlay.show{display:flex;animation:fadeIn .2s ease}
     @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -241,16 +237,15 @@
     .pm-print{border:none;background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(91,79,207,.3)}
     .pm-print:hover{background:#4a3fb8}
 
-    /* ── FOOTER ── */
+    /* FOOTER */
     .footer{max-width:1280px;margin:0 auto;padding:20px 32px 36px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);font-size:.72rem;color:var(--muted);font-family:var(--m)}
     .footer strong{color:var(--ink)}
 
-    /* ── RESPONSIVE ── */
+    /* RESPONSIVE */
     @media(max-width:1024px){.chart-area{grid-template-columns:1fr}.hist-charts{grid-template-columns:1fr}}
     @media(max-width:760px){.hero-in{grid-template-columns:1fr}.hgrid{display:none}.rooms{grid-template-columns:1fr}.hist-charts{grid-template-columns:1fr}}
     @media(max-width:540px){.main{padding:24px 16px 48px}.nav-in{padding:0 16px}.hero{padding:32px 16px 36px}.alert-bar{padding:10px 16px}.footer{padding:16px}.sumbar{grid-template-columns:1fr 1fr}}
 
-    /* ── PRINT STYLES ── */
     @media print{
       nav,.ticker,.tabs,.alert-bar,.alert-close,button,.nbtn,.nalink,.rchev,.locked{display:none!important}
       .hero{padding:20px 0!important;border:none!important}
@@ -263,19 +258,19 @@
 </head>
 <body>
 
-<!-- ── ALERT BANNER ── -->
+<!-- ALERT -->
 <div class="alert-bar" id="alert-bar">
   <div class="alert-in">
     <span class="alert-icon">⚠️</span>
     <div>
-      <div class="alert-msg" id="alert-msg">Alerte qualité d'air</div>
+      <div class="alert-msg" id="alert-msg">Alerte</div>
       <div class="alert-items" id="alert-items"></div>
     </div>
     <button class="alert-close" onclick="closeAlert()">✕</button>
   </div>
 </div>
 
-<!-- ── NAV ── -->
+<!-- NAV -->
 <nav>
   <div class="nav-in">
     <div class="nav-brand">
@@ -293,25 +288,25 @@
   </div>
 </nav>
 
-<!-- ── HERO ── -->
+<!-- HERO -->
 <section class="hero">
   <div class="hero-in">
     <div>
       <div class="hero-eyebrow">Supervision environnementale · Temps réel</div>
       <h1>Données vivantes<br>du <em>FabLab</em></h1>
-      <p class="hero-p">Température, humidité, qualité d'air et luminosité — collectés en continu depuis les capteurs des deux salles. Cliquez sur une salle pour explorer ses détails.</p>
+      <p class="hero-p">Température, humidité, qualité d'air, luminosité et présence — collectés en continu depuis les capteurs des deux salles.</p>
       <div class="hero-ts">Mise à jour : <strong id="last-upd">chargement…</strong>&nbsp;·&nbsp;<span id="status-msg">Initialisation</span></div>
     </div>
     <div class="hgrid">
       <div class="hg v"><div class="hg-l">Temp. moyenne</div><div class="hg-v" id="hs-temp">--</div><div class="hg-s">°C · 2 salles</div></div>
       <div class="hg t"><div class="hg-l">Humidité · A</div><div class="hg-v" id="hs-hum">--</div><div class="hg-s">% HR</div></div>
       <div class="hg a"><div class="hg-l">CO₂ · Salle B</div><div class="hg-v" id="hs-co2">--</div><div class="hg-s">ppm</div></div>
-      <div class="hg g"><div class="hg-l">Qualité air · B</div><div class="hg-v" id="hs-air">--</div><div class="hg-s" id="hs-air-lbl">Indisponible</div></div>
+      <div class="hg p"><div class="hg-l">Présence · Salle A</div><div class="hg-v" id="hs-occ">--</div><div class="hg-s">personnes</div></div>
     </div>
   </div>
 </section>
 
-<!-- ── TICKER ── -->
+<!-- TICKER -->
 <div class="ticker">
   <div class="ticker-track">
     <div class="ti"><div class="ti-dot" style="background:var(--accent)"></div>Temp. A <span class="v" id="tk-t1">--°C</span></div>
@@ -320,6 +315,7 @@
     <div class="ti"><div class="ti-dot" style="background:var(--red)"></div>CO₂ B <span class="v" id="tk-co2">-- ppm</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--green)"></div>Lumière A <span class="v" id="tk-l1">-- lux</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--green)"></div>Lumière B <span class="v" id="tk-l2">-- lux</span></div>
+    <div class="ti"><div class="ti-dot" style="background:var(--violet)"></div>Présence A <span class="v" id="tk-occ">-- pers.</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--amber)"></div>Qualité air <span class="v" id="tk-air">--</span></div>
     <!-- duplicate -->
     <div class="ti"><div class="ti-dot" style="background:var(--accent)"></div>Temp. A <span class="v" id="tk-t1b">--°C</span></div>
@@ -328,23 +324,24 @@
     <div class="ti"><div class="ti-dot" style="background:var(--red)"></div>CO₂ B <span class="v" id="tk-co2b">-- ppm</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--green)"></div>Lumière A <span class="v" id="tk-l1b">-- lux</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--green)"></div>Lumière B <span class="v" id="tk-l2b">-- lux</span></div>
+    <div class="ti"><div class="ti-dot" style="background:var(--violet)"></div>Présence A <span class="v" id="tk-occb">-- pers.</span></div>
     <div class="ti"><div class="ti-dot" style="background:var(--amber)"></div>Qualité air <span class="v" id="tk-airb">--</span></div>
   </div>
 </div>
 
-<!-- ── MAIN ── -->
+<!-- MAIN -->
 <div class="main">
 
-  <!-- TABS -->
   <div class="tabs">
     <button class="tab active" onclick="switchTab('overview',this)">Vue générale</button>
     <button class="tab" onclick="switchTab('salles',this)">Salles</button>
     <button class="tab" onclick="switchTab('history',this)">Historique</button>
   </div>
 
-  <!-- PANEL: VUE GÉNÉRALE -->
+  <!-- VUE GÉNÉRALE -->
   <div class="panel active" id="panel-overview">
     <div class="sh"><span class="sh-t">Synthèse</span><div class="sh-l"></div></div>
+
     <div class="chart-area">
       <div class="card">
         <div class="chead">
@@ -364,6 +361,32 @@
         <div style="margin-top:10px;font-size:.7rem;color:var(--muted)">Salle B · PM 2.5/10</div>
       </div>
     </div>
+
+    <!-- CARTE OCCUPATION -->
+    <div class="sh"><span class="sh-t">Présence · Salle A</span><div class="sh-l"></div></div>
+    <div class="occ-card" style="margin-bottom:32px">
+      <div class="occ-icon">🧑‍🤝‍🧑</div>
+      <div class="occ-main">
+        <div class="occ-lbl">Occupation actuelle · Salle A</div>
+        <div class="occ-num" id="occ-num">--</div>
+        <div class="occ-sub">personnes détectées par caméra IA</div>
+        <div class="occ-stats">
+          <div class="occ-stat">
+            <span class="n in" id="occ-in">--</span>
+            <span class="l">Entrées</span>
+          </div>
+          <div class="occ-stat">
+            <span class="n out" id="occ-out">--</span>
+            <span class="l">Sorties</span>
+          </div>
+          <div class="occ-stat">
+            <span class="n" id="occ-ts" style="font-size:.7rem;color:var(--muted)">--</span>
+            <span class="l">Dernière détection</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="sh"><span class="sh-t">Récapitulatif instantané</span><div class="sh-l"></div></div>
     <div class="sumbar">
       <div class="sb-item cv"><div class="sb-lbl">Temp. Salle A</div><div class="sb-val" id="sb-t1">--</div><div class="sb-sub">°C intérieur</div></div>
@@ -371,10 +394,11 @@
       <div class="sb-item ca"><div class="sb-lbl">Temp. Salle B</div><div class="sb-val" id="sb-t2">--</div><div class="sb-sub">°C intérieur</div></div>
       <div class="sb-item cr"><div class="sb-lbl">CO₂ Salle B</div><div class="sb-val" id="sb-co2">--</div><div class="sb-sub">ppm</div></div>
       <div class="sb-item cg"><div class="sb-lbl">Qualité air B</div><div class="sb-val" id="sb-air">--</div><div class="sb-sub" id="sb-air-lbl">Indisponible</div></div>
+      <div class="sb-item cp"><div class="sb-lbl">Présence Salle A</div><div class="sb-val" id="sb-occ">--</div><div class="sb-sub">personnes</div></div>
     </div>
   </div>
 
-  <!-- PANEL: SALLES -->
+  <!-- SALLES -->
   <div class="panel" id="panel-salles">
     <div class="sh"><span class="sh-t">Sélectionner une salle</span><div class="sh-l"></div></div>
     <div class="rooms">
@@ -383,7 +407,7 @@
         <div class="rh">
           <div class="rl2">
             <div class="rid">A</div>
-            <div><div class="rn">Salle A</div><div class="rd">Température · Humidité · Lumière</div></div>
+            <div><div class="rn">Salle A</div><div class="rd">Température · Humidité · Lumière · Présence</div></div>
           </div>
           <div class="rchev"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2.5 4.5l4 4 4-4" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         </div>
@@ -391,15 +415,17 @@
           <div class="pk"><span class="pkv" id="pa-t">--</span><span class="pkl">Temp. °C</span></div>
           <div class="pk"><span class="pkv" id="pa-h">--</span><span class="pkl">Humidité %</span></div>
           <div class="pk"><span class="pkv" id="pa-l">--</span><span class="pkl">Lux</span></div>
+          <div class="pk"><span class="pkv" id="pa-occ" style="color:var(--violet)">--</span><span class="pkl">Personnes</span></div>
         </div>
         <div class="rpanel" id="rpanel-a">
           <div class="krow" id="krow-a">
             <div class="kt kv"><div class="kl">Température</div><div class="kv2" id="a-t">--<span class="ku">°C</span><span class="trend flat" id="tr-a-t">→</span></div><canvas class="sp" id="sp-a-t"></canvas></div>
             <div class="kt kt2"><div class="kl">Humidité</div><div class="kv2" id="a-h">--<span class="ku">%</span><span class="trend flat" id="tr-a-h">→</span></div><canvas class="sp" id="sp-a-h"></canvas></div>
             <div class="kt ka"><div class="kl">Luminosité</div><div class="kv2" id="a-l">--<span class="ku">lx</span><span class="trend flat" id="tr-a-l">→</span></div><canvas class="sp" id="sp-a-l"></canvas></div>
+            <div class="kt kp"><div class="kl">Présence</div><div class="kv2" id="a-occ" style="color:var(--violet)">--<span class="ku">pers.</span></div><div class="occ-mini"><span class="en" id="a-occ-in">↑ --</span><span class="so" id="a-occ-out">↓ --</span></div></div>
           </div>
           <div class="rchart"><div class="rct">Température Salle A · 24h <span id="ca-last">--</span></div><canvas class="rcv" id="chart-a-t"></canvas></div>
-          <div class="locked">🔒 &nbsp;<strong>Caméra IA</strong> — <span class="lbadge">Administration</span></div>
+          <div class="locked">🔒 &nbsp;<strong>Caméra IA · Flux vidéo</strong> — <span class="lbadge">Administration</span></div>
         </div>
       </div>
 
@@ -432,7 +458,7 @@
     </div>
   </div>
 
-  <!-- PANEL: HISTORIQUE -->
+  <!-- HISTORIQUE -->
   <div class="panel" id="panel-history">
     <div class="hist-controls">
       <div class="sh" style="margin:0;flex:1"><span class="sh-t">Historique des mesures</span><div class="sh-l"></div></div>
@@ -450,38 +476,21 @@
       </div>
     </div>
     <div class="hist-charts">
-      <div class="hist-card">
-        <div class="hist-card-t">Température</div>
-        <div class="hist-card-s" id="hc-temp-sub">Salle A & B</div>
-        <canvas class="hcv" id="hchart-temp"></canvas>
-      </div>
-      <div class="hist-card">
-        <div class="hist-card-t">Humidité</div>
-        <div class="hist-card-s" id="hc-hum-sub">Salle A & B</div>
-        <canvas class="hcv" id="hchart-hum"></canvas>
-      </div>
-      <div class="hist-card">
-        <div class="hist-card-t">CO₂</div>
-        <div class="hist-card-s">Salle B</div>
-        <canvas class="hcv" id="hchart-co2"></canvas>
-      </div>
-      <div class="hist-card">
-        <div class="hist-card-t">Qualité d'air</div>
-        <div class="hist-card-s">Salle B</div>
-        <canvas class="hcv" id="hchart-air"></canvas>
-      </div>
+      <div class="hist-card"><div class="hist-card-t">Température</div><div class="hist-card-s" id="hc-temp-sub">Salle A & B</div><canvas class="hcv" id="hchart-temp"></canvas></div>
+      <div class="hist-card"><div class="hist-card-t">Humidité</div><div class="hist-card-s" id="hc-hum-sub">Salle A & B</div><canvas class="hcv" id="hchart-hum"></canvas></div>
+      <div class="hist-card"><div class="hist-card-t">CO₂</div><div class="hist-card-s">Salle B</div><canvas class="hcv" id="hchart-co2"></canvas></div>
+      <div class="hist-card"><div class="hist-card-t">Qualité d'air</div><div class="hist-card-s">Salle B</div><canvas class="hcv" id="hchart-air"></canvas></div>
     </div>
   </div>
 
-</div><!-- /main -->
+</div>
 
-<!-- ── FOOTER ── -->
 <footer class="footer">
   <span>FabLab Valrose · Université Côte d'Azur · SmartMonitoring</span>
   <span>Sync : <strong id="ft">--</strong></span>
 </footer>
 
-<!-- ── PRINT MODAL ── -->
+<!-- PRINT MODAL -->
 <div class="print-overlay" id="print-overlay">
   <div class="print-modal">
     <div class="pm-title">Exporter les données</div>
@@ -490,6 +499,7 @@
     <div class="pm-snapshot">
       <div class="pm-row"><span class="pm-key">Température Salle A</span><span class="pm-val" id="pm-t1">--</span></div>
       <div class="pm-row"><span class="pm-key">Humidité Salle A</span><span class="pm-val" id="pm-h1">--</span></div>
+      <div class="pm-row"><span class="pm-key">Présence Salle A</span><span class="pm-val" id="pm-occ">--</span></div>
       <div class="pm-row"><span class="pm-key">Température Salle B</span><span class="pm-val" id="pm-t2">--</span></div>
       <div class="pm-row"><span class="pm-key">Humidité Salle B</span><span class="pm-val" id="pm-h2">--</span></div>
       <div class="pm-row"><span class="pm-key">CO₂ Salle B</span><span class="pm-val" id="pm-co2">--</span></div>
@@ -503,24 +513,22 @@
 </div>
 
 <script>
-/* ── STATE ── */
+/* STATE */
 let activeRoom=null, histPeriod=6, histRoom='both';
 let hOv={},hA={},hB={};
-const prev={};  // store previous values for trend
+const prev={};
 
-/* ── TABS ── */
+/* TABS */
 function switchTab(id,btn){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   btn.classList.add('active');
-  if(id==='history') renderHistory();
-  if(id==='overview'){
-    setTimeout(()=>redrawOverview(),40);
-  }
+  if(id==='history')renderHistory();
+  if(id==='overview')setTimeout(()=>redrawOverview(),40);
 }
 
-/* ── ROOM TOGGLE ── */
+/* ROOM TOGGLE */
 function toggleRoom(id){
   const c=document.getElementById('card-'+id),p=document.getElementById('prev-'+id);
   if(activeRoom===id){c.classList.remove('open');p.style.display='';activeRoom=null;}
@@ -531,57 +539,45 @@ function toggleRoom(id){
   }
 }
 
-/* stagger animation */
 function animateKpis(id){
   const tiles=document.querySelectorAll('#krow-'+id+' .kt');
-  tiles.forEach((t,i)=>{
-    t.classList.remove('visible');
-    setTimeout(()=>t.classList.add('visible'),i*70);
-  });
+  tiles.forEach((t,i)=>{t.classList.remove('visible');setTimeout(()=>t.classList.add('visible'),i*70);});
 }
 
-/* ── ALERT ── */
+/* ALERT */
 let alertDismissed=false;
 function checkAlerts(data){
   if(alertDismissed)return;
   const alerts=[];
   const co2=data.salle2?.co2, air=data.salle2?.qualite_air_score;
-  const t1=data.salle1?.temperature, t2=data.salle2?.temperature;
-  const h1=data.salle1?.humidite;
-  if(co2!=null&&co2>800) alerts.push(`CO₂ ${Math.round(co2)} ppm`);
-  if(air!=null&&air>200)  alerts.push(`Qualité air ${Math.round(air)}/500`);
-  if(t1!=null&&t1>28)     alerts.push(`Temp. A ${(+t1).toFixed(1)}°C`);
-  if(t2!=null&&t2>28)     alerts.push(`Temp. B ${(+t2).toFixed(1)}°C`);
-  if(h1!=null&&h1>75)     alerts.push(`Humidité A ${(+h1).toFixed(0)}%`);
+  const t1=data.salle1?.temperature, t2=data.salle2?.temperature, h1=data.salle1?.humidite;
+  if(co2!=null&&co2>800) alerts.push('CO₂ '+Math.round(co2)+' ppm');
+  if(air!=null&&air>200)  alerts.push('Qualité air '+Math.round(air)+'/500');
+  if(t1!=null&&t1>28)     alerts.push('Temp. A '+Number(t1).toFixed(1)+'°C');
+  if(t2!=null&&t2>28)     alerts.push('Temp. B '+Number(t2).toFixed(1)+'°C');
+  if(h1!=null&&h1>75)     alerts.push('Humidité A '+Number(h1).toFixed(0)+'%');
   const bar=document.getElementById('alert-bar');
   if(alerts.length){
-    document.getElementById('alert-msg').textContent=
-      alerts.length===1?'Dépassement de seuil détecté':'Plusieurs seuils dépassés — vérifier les salles';
-    document.getElementById('alert-items').innerHTML=alerts.map(a=>`<span class="alert-chip">${a}</span>`).join('');
+    document.getElementById('alert-msg').textContent=alerts.length===1?'Dépassement de seuil détecté':'Plusieurs seuils dépassés — vérifier les salles';
+    document.getElementById('alert-items').innerHTML=alerts.map(a=>'<span class="alert-chip">'+a+'</span>').join('');
     bar.classList.add('show');
-  } else {
-    bar.classList.remove('show');
-  }
+  } else { bar.classList.remove('show'); }
 }
-function closeAlert(){
-  alertDismissed=true;
-  document.getElementById('alert-bar').classList.remove('show');
-}
+function closeAlert(){alertDismissed=true;document.getElementById('alert-bar').classList.remove('show');}
 
-/* ── TREND ── */
+/* TREND */
 function setTrend(id,current){
-  const el=document.getElementById(id);
-  if(!el)return;
-  const key=id, p=prev[key];
-  if(p==null){prev[key]=current;el.textContent='→';el.className='trend flat';return;}
+  const el=document.getElementById(id);if(!el)return;
+  const p=prev[id];
+  if(p==null){prev[id]=current;el.textContent='→';el.className='trend flat';return;}
   const diff=current-p;
-  if(Math.abs(diff)<0.1*Math.abs(p||1)||Math.abs(diff)<0.05){el.textContent='→';el.className='trend flat';}
+  if(Math.abs(diff)<0.05){el.textContent='→';el.className='trend flat';}
   else if(diff>0){el.textContent='↑';el.className='trend up';}
   else{el.textContent='↓';el.className='trend down';}
-  prev[key]=current;
+  prev[id]=current;
 }
 
-/* ── CANVAS ── */
+/* CANVAS */
 function setup(cv){
   const dpr=devicePixelRatio||1,W=cv.clientWidth||300,H=cv.clientHeight||40;
   cv.width=W*dpr;cv.height=H*dpr;
@@ -620,11 +616,7 @@ function bigChart(id,s1,c1,s2,c2){
   }
   line(s1,c1);if(s2)line(s2,c2);
 }
-
-/* dynamic ring with CSS transition */
-let ringScore=null;
 function drawRing(score){
-  ringScore=score;
   const cv=document.getElementById('ring-air');if(!cv)return;
   const dpr=devicePixelRatio||1,S=120;
   cv.width=S*dpr;cv.height=S*dpr;
@@ -634,14 +626,10 @@ function drawRing(score){
   const col=pct<.2?'#15803d':pct<.4?'#16a34a':pct<.6?'#b45309':pct<.8?'#c2410c':'#b91c1c';
   document.getElementById('ring-val').style.color=col;
   ctx.beginPath();ctx.arc(cx,cy,r,sa,ea);ctx.strokeStyle='#ece8e1';ctx.lineWidth=9;ctx.lineCap='round';ctx.stroke();
-  if(pct>0){
-    ctx.beginPath();ctx.arc(cx,cy,r,sa,sa+(ea-sa)*pct);
-    ctx.strokeStyle=col;ctx.lineWidth=9;ctx.lineCap='round';
-    ctx.shadowColor=col;ctx.shadowBlur=10;ctx.stroke();ctx.shadowBlur=0;
-  }
+  if(pct>0){ctx.beginPath();ctx.arc(cx,cy,r,sa,sa+(ea-sa)*pct);ctx.strokeStyle=col;ctx.lineWidth=9;ctx.lineCap='round';ctx.shadowColor=col;ctx.shadowBlur=10;ctx.stroke();ctx.shadowBlur=0;}
 }
 
-/* ── DATA ── */
+/* DATA */
 async function get(url){try{const r=await fetch(url,{cache:'no-store'});return r.ok?r.json():null;}catch{return null;}}
 function f(v,d=1){const n=+v;return isFinite(n)?n.toFixed(d):'--';}
 function set(id,t){const e=document.getElementById(id);if(e)e.textContent=t;}
@@ -656,35 +644,75 @@ async function refresh(){
   const[data,ov,a,b]=await Promise.all([
     get('/api/public/overview'),
     get('/api/public/history?room=overview'),
-    get(`/api/public/history?room=salle1&hours=${histPeriod}`),
-    get(`/api/public/history?room=salle2&hours=${histPeriod}`)
+    get('/api/public/history?room=salle1&hours='+histPeriod),
+    get('/api/public/history?room=salle2&hours='+histPeriod)
   ]);
   hOv=ov||{};hA=a||{};hB=b||{};
   if(data){
     const t1=data.salle1?.temperature,h1=data.salle1?.humidite,l1=data.salle1?.lumiere;
     const t2=data.salle2?.temperature,h2=data.salle2?.humidite,l2=data.salle2?.lumiere;
     const co2=data.salle2?.co2,air=data.salle2?.qualite_air_score,airlbl=data.salle2?.qualite_air_label;
+    const cam=data.salle1?.camera;
+    const occ=cam?.occupancy, occIn=cam?.in, occOut=cam?.out, occTs=cam?.updated_at;
+
     const avg=[t1,t2].filter(v=>v!=null);
     const avgv=avg.length?(avg.reduce((a,b)=>a+b,0)/avg.length).toFixed(1):'--';
     set('hs-temp',avgv+(avgv!=='--'?'°C':''));
-    set('hs-hum',h1!=null?f(h1)+'%':'--');set('hs-co2',co2!=null?f(co2,0):'--');
-    set('hs-air',air!=null?Math.round(air)+'':'--');set('hs-air-lbl',airlbl||'Indisponible');
-    const tp=[['tk-t1','tk-t1b',f(t1)+'°C'],['tk-h1','tk-h1b',f(h1)+'%'],['tk-t2','tk-t2b',f(t2)+'°C'],['tk-co2','tk-co2b',f(co2,0)+' ppm'],['tk-l1','tk-l1b',f(l1,0)+' lux'],['tk-l2','tk-l2b',f(l2,0)+' lux'],['tk-air','tk-airb',air!=null?Math.round(air)+'':'--']];
+    set('hs-hum',h1!=null?f(h1)+'%':'--');
+    set('hs-co2',co2!=null?f(co2,0):'--');
+    set('hs-occ',occ!=null?occ+'':'--');
+
+    // ticker
+    const tp=[
+      ['tk-t1','tk-t1b',f(t1)+'°C'],['tk-h1','tk-h1b',f(h1)+'%'],
+      ['tk-t2','tk-t2b',f(t2)+'°C'],['tk-co2','tk-co2b',f(co2,0)+' ppm'],
+      ['tk-l1','tk-l1b',f(l1,0)+' lux'],['tk-l2','tk-l2b',f(l2,0)+' lux'],
+      ['tk-occ','tk-occb',occ!=null?occ+' pers.':'-- pers.'],
+      ['tk-air','tk-airb',air!=null?Math.round(air)+'':'--']
+    ];
     tp.forEach(([a,b,v])=>{set(a,v);set(b,v);});
+
+    // previews
     set('pa-t',f(t1));set('pa-h',f(h1));set('pa-l',f(l1,0));
+    set('pa-occ',occ!=null?occ+'':'--');
     set('pb-t',f(t2));set('pb-c',f(co2,0));set('pb-a',air!=null?Math.round(air)+'':'--');
+
+    // KPIs
     kset('a-t',t1,1,'tr-a-t');kset('a-h',h1,1,'tr-a-h');kset('a-l',l1,0,'tr-a-l');
-    kset('b-t',t2,1,'tr-b-t');kset('b-h',h2,1,'tr-b-h');kset('b-l',l2,0,'tr-b-l');kset('b-c',co2,0,'tr-b-c');kset('b-a',air,0,'tr-b-a');
-    drawRing(air);set('ring-val',air!=null?Math.round(air):'--');
-    const ab=document.getElementById('air-badge');
-    if(ab){ab.textContent=airlbl||'Indisponible';ab.className='rbadge '+(!air||air<100?'rgood':air<250?'rmod':'rbad');}
+    kset('b-t',t2,1,'tr-b-t');kset('b-h',h2,1,'tr-b-h');kset('b-l',l2,0,'tr-b-l');
+    kset('b-c',co2,0,'tr-b-c');kset('b-a',air,0,'tr-b-a');
+
+    // occupation Salle A
+    if(occ!=null){
+      const occEl=document.getElementById('a-occ');
+      if(occEl&&occEl.childNodes[0])occEl.childNodes[0].textContent=occ;
+    }
+    set('a-occ-in','↑ '+(occIn!=null?occIn:'--'));
+    set('a-occ-out','↓ '+(occOut!=null?occOut:'--'));
+
+    // carte occupation vue générale
+    set('occ-num',occ!=null?occ+'':'--');
+    set('occ-in',occIn!=null?occIn+'':'--');
+    set('occ-out',occOut!=null?occOut+'':'--');
+    set('occ-ts',occTs?new Date(occTs).toLocaleTimeString('fr-FR'):'--');
+
+    // summary bar
     set('sb-t1',t1!=null?f(t1)+'°C':'--');set('sb-h1',h1!=null?f(h1)+'%':'--');
     set('sb-t2',t2!=null?f(t2)+'°C':'--');set('sb-co2',co2!=null?f(co2,0)+' ppm':'--');
     set('sb-air',air!=null?Math.round(air)+'':'--');set('sb-air-lbl',airlbl||'Indisponible');
+    set('sb-occ',occ!=null?occ+' pers.':'--');
+
+    // ring
+    drawRing(air);set('ring-val',air!=null?Math.round(air):'--');
+    const ab=document.getElementById('air-badge');
+    if(ab){ab.textContent=airlbl||'Indisponible';ab.className='rbadge '+(!air||air<100?'rgood':air<250?'rmod':'rbad');}
+
     const ts=new Date(data.generated_at||Date.now()).toLocaleTimeString('fr-FR');
     set('last-upd',ts);set('ft',ts);set('status-msg','Données à jour');
-    // print modal data
+
+    // print
     set('pm-t1',t1!=null?f(t1)+' °C':'--');set('pm-h1',h1!=null?f(h1)+' %':'--');
+    set('pm-occ',occ!=null?occ+' personne(s)':'--');
     set('pm-t2',t2!=null?f(t2)+' °C':'--');set('pm-h2',h2!=null?f(h2)+' %':'--');
     set('pm-co2',co2!=null?f(co2,0)+' ppm':'--');set('pm-air',air!=null?Math.round(air)+'/500':'--');
     set('pm-ts','Rapport généré le '+new Date().toLocaleString('fr-FR'));
@@ -718,41 +746,27 @@ function renderRoom(id){
   }
 }
 
-/* ── HISTORY ── */
-function setPeriod(h,btn){
-  histPeriod=h;
-  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  loadAndRenderHistory();
-}
-function setHistRoom(r,btn){
-  histRoom=r;
-  document.querySelectorAll('.hsel').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  renderHistory();
-}
+/* HISTORY */
+function setPeriod(h,btn){histPeriod=h;document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');loadAndRenderHistory();}
+function setHistRoom(r,btn){histRoom=r;document.querySelectorAll('.hsel').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderHistory();}
 async function loadAndRenderHistory(){
-  const[a,b]=await Promise.all([
-    get(`/api/public/history?room=salle1&hours=${histPeriod}`),
-    get(`/api/public/history?room=salle2&hours=${histPeriod}`)
-  ]);
-  hA=a||{};hB=b||{};
-  renderHistory();
+  const[a,b]=await Promise.all([get('/api/public/history?room=salle1&hours='+histPeriod),get('/api/public/history?room=salle2&hours='+histPeriod)]);
+  hA=a||{};hB=b||{};renderHistory();
 }
 function renderHistory(){
-  const sA=hA.series||{}, sB=hB.series||{};
-  const showA=histRoom!=='salle2', showB=histRoom!=='salle1';
+  const sA=hA.series||{},sB=hB.series||{};
+  const showA=histRoom!=='salle2',showB=histRoom!=='salle1';
   set('hc-temp-sub',histRoom==='salle1'?'Salle A':histRoom==='salle2'?'Salle B':'Salle A & B');
   set('hc-hum-sub',histRoom==='salle1'?'Salle A':histRoom==='salle2'?'Salle B':'Salle A & B');
-  bigChart('hchart-temp', showA?sA.temperature||[]:[], '#5b4fcf', showB?sB.temperature||[]:[], '#b45309');
-  bigChart('hchart-hum',  showA?sA.humidite||[]:[],    '#0f766e', showB?sB.humidite||[]:[],    '#b45309');
-  bigChart('hchart-co2',  sB.co2||[], '#b91c1c');
-  bigChart('hchart-air',  sB.air||[], '#b45309');
+  bigChart('hchart-temp',showA?sA.temperature||[]:[],  '#5b4fcf',showB?sB.temperature||[]:[],'#b45309');
+  bigChart('hchart-hum', showA?sA.humidite||[]:[],     '#0f766e',showB?sB.humidite||[]:[],'#b45309');
+  bigChart('hchart-co2', sB.co2||[],'#b91c1c');
+  bigChart('hchart-air', sB.air||[],'#b45309');
 }
 
-/* ── PRINT MODAL ── */
-function openPrint(){document.getElementById('print-overlay').classList.add('show')}
-function closePrint(){document.getElementById('print-overlay').classList.remove('show')}
+/* PRINT */
+function openPrint(){document.getElementById('print-overlay').classList.add('show');}
+function closePrint(){document.getElementById('print-overlay').classList.remove('show');}
 document.getElementById('print-overlay').addEventListener('click',function(e){if(e.target===this)closePrint();});
 
 document.getElementById('btn-r').addEventListener('click',refresh);
