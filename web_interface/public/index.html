@@ -312,7 +312,7 @@
     <div class="hgrid">
       <div class="hg v"><div class="hg-l">Temp. moyenne</div><div class="hg-v" id="hs-temp">--</div><div class="hg-s">°C · 2 salles</div></div>
       <div class="hg t"><div class="hg-l">Humidité · A</div><div class="hg-v" id="hs-hum">--</div><div class="hg-s">% HR</div></div>
-      <div class="hg a"><div class="hg-l">PM 2.5 · Salle B</div><div class="hg-v" id="hs-co2">--</div><div class="hg-s">µg/m³</div></div>
+      <div class="hg a"><div class="hg-l">PM 2.5 · Salle B</div><div class="hg-v" id="hs-pm">--</div><div class="hg-s">µg/m³</div></div>
       <div class="hg p"><div class="hg-l">Présence · Salle A</div><div class="hg-v" id="hs-occ">--</div><div class="hg-s">personnes</div></div>
     </div>
   </div>
@@ -719,13 +719,13 @@ async function refresh(){
     const avgv=avg.length?(avg.reduce((a,b)=>a+b,0)/avg.length).toFixed(1):'--';
     set('hs-temp',avgv+(avgv!=='--'?'°C':''));
     set('hs-hum',h1!=null?f(h1)+'%':'--');
-    set('hs-co2',co2!=null?f(co2,0):'--');
+    set('hs-pm',pm25b!=null?f(pm25b,1):'--');
     set('hs-occ',occ!=null?occ+'':'--');
 
     // ticker
     const tp=[
       ['tk-t1','tk-t1b',f(t1)+'°C'],['tk-h1','tk-h1b',f(h1)+'%'],
-      ['tk-t2','tk-t2b',f(t2)+'°C'],['tk-co2','tk-co2b',co2!=null?f(co2,0)+' ppm':'--'],
+      ['tk-t2','tk-t2b',f(t2)+'°C'],['tk-co2','tk-co2b',pm25b!=null?f(pm25b,1)+' µg/m³':'--'],
       ['tk-l1','tk-l1b',f(l1,0)+' lux'],['tk-l2','tk-l2b',f(l2,0)+' lux'],
       ['tk-occ','tk-occb',occ!=null?occ+' pers.':'-- pers.'],
       ['tk-air','tk-airb',air!=null?Math.round(air)+'':'--']
@@ -760,7 +760,7 @@ async function refresh(){
 
     // summary bar
     set('sb-t1',t1!=null?f(t1)+'°C':'--');set('sb-h1',h1!=null?f(h1)+'%':'--');
-    set('sb-t2',t2!=null?f(t2)+'°C':'--');set('sb-co2',co2!=null?f(co2,0)+' ppm':'--');
+    set('sb-t2',t2!=null?f(t2)+'°C':'--');set('sb-co2',pm25b!=null?f(pm25b,1)+' µg/m³':'--');
     set('sb-air',air!=null?Math.round(air)+'':'--');set('sb-air-lbl',airlbl||'Indisponible');
     set('sb-occ',occ!=null?occ+' pers.':'--');
 
