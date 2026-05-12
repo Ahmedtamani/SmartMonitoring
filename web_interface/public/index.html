@@ -468,6 +468,8 @@
             <div class="kt ka clickable" onclick="selectSensor('b','lux',this,event)" data-sensor="lux"><div class="kl">Luminosité</div><div class="kv2" id="b-l">--<span class="ku">lx</span><span class="trend flat" id="tr-b-l">→</span></div></div>
             <div class="kt kr clickable" onclick="selectSensor('b','pm25',this,event)" data-sensor="pm25"><div class="kl">PM 2.5</div><div class="kv2" id="b-c">--<span class="ku">µg/m³</span><span class="trend flat" id="tr-b-c">→</span></div></div>
             <div class="kt kg clickable" onclick="selectSensor('b','pm10',this,event)" data-sensor="pm10"><div class="kl">PM 10</div><div class="kv2" id="b-a">--<span class="ku">µg/m³</span><span class="trend flat" id="tr-b-a">→</span></div></div>
+            <div class="kt kt2 clickable" onclick="selectSensor('b','pression',this,event)" data-sensor="pression"><div class="kl">Pression</div><div class="kv2" id="b-press">--<span class="ku">hPa</span></div></div>
+            <div class="kt ka clickable" onclick="selectSensor('b','gaz',this,event)" data-sensor="gaz"><div class="kl">Gaz COV</div><div class="kv2" id="b-gaz">--<span class="ku">kΩ</span></div></div>
             <div class="kt kt2"><div class="kl">Radar · Cibles</div><div class="kv2" id="b-radar-nb" style="color:var(--teal)">--<span class="ku">pers.</span></div><div style="margin-top:6px;font-size:.7rem;font-family:var(--m);color:var(--muted)" id="b-radar-pres">Présence : --</div><div style="margin-top:4px;font-size:.68rem;font-family:var(--m);color:var(--muted)" id="b-radar-dist">--</div><div style="margin-top:2px;font-size:.68rem;font-family:var(--m);color:var(--muted)" id="b-radar-speed">--</div></div>
           </div>
           <div class="sensor-chart" id="sc-b">
@@ -575,9 +577,9 @@ function animateKpis(id){
 }
 
 /* SENSOR SELECT */
-const SENSOR_LABELS={temp:'Température',hum:'Humidité',lux:'Luminosité',pm25:'PM 2.5',pm10:'PM 10'};
-const SENSOR_COLORS={temp:'#5b4fcf',hum:'#0f766e',lux:'#b45309',pm25:'#b91c1c',pm10:'#7c3aed'};
-const SENSOR_KEYS={temp:'temperature',hum:'humidite',lux:'lumiere',pm25:'pm25',pm10:'pm10'};
+const SENSOR_LABELS={temp:'Température',hum:'Humidité',lux:'Luminosité',pm25:'PM 2.5',pm10:'PM 10',pression:'Pression',gaz:'Gaz COV'};
+const SENSOR_COLORS={temp:'#5b4fcf',hum:'#0f766e',lux:'#b45309',pm25:'#b91c1c',pm10:'#7c3aed',pression:'#0f766e',gaz:'#b45309'};
+const SENSOR_KEYS={temp:'temperature',hum:'humidite',lux:'lumiere',pm25:'pm25',pm10:'pm10',pression:'pression',gaz:'gaz'};
 
 function selectSensor(room,sensor,tile,event){
   event.stopPropagation();
@@ -743,6 +745,8 @@ async function refresh(){
     kset('a-pm25',pm25a,1);kset('a-pm10',pm10a,1);
     kset('b-t',t2,1,'tr-b-t');kset('b-h',h2,1,'tr-b-h');kset('b-l',l2,0,'tr-b-l');
     kset('b-c',pm25b,1,'tr-b-c');kset('b-a',pm10b,1,'tr-b-a');
+    const pressB=data.salle2?.pression, gazB=data.salle2?.gaz;
+    kset('b-press',pressB,1);kset('b-gaz',gazB,2);
 
     // occupation Salle A
     if(occ!=null){

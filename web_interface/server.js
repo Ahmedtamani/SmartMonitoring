@@ -131,13 +131,15 @@ const TOPIC_PATTERNS = {
         cameraIa:    []
     },
     salle2: {
-        temperature: ['%fablab_21_22/salle22/all/temperature%', '%fablab_21_22/salle12/all/temperature%'],
-        humidite:    ['%fablab_21_22/salle22/all/humidite%',    '%fablab_21_22/salle12/all/humidite%'],
+        temperature: ['%fablab_21_22/salle22/all/temperature%', '%fablab_21_22/salle12/all/temperature%', '%fablab_21_22/salle_21/co2/temperature%'],
+        humidite:    ['%fablab_21_22/salle22/all/humidite%',    '%fablab_21_22/salle12/all/humidite%',    '%fablab_21_22/salle_21/co2/humidity%'],
         lumiere:     ['%fablab_21_22/salle22/all/lux%',         '%fablab_21_22/salle12/all/lux%'],
         pm25:        ['%fablab_21_22/salle22/all/pm25%',        '%fablab_21_22/salle12/all/pm25%'],
         pm10:        ['%fablab_21_22/salle22/all/pm10%',        '%fablab_21_22/salle12/all/pm10%'],
         co2:         [],
         air:         [],
+        pression:    ['%fablab_21_22/salle_21/co2/pressure%'],
+        gaz:         ['%fablab_21_22/salle_21/co2/gas%'],
         radarNb:       ['%fablab_21_22/radar/salle104/nb%'],
         radarPresence: ['%fablab_21_22/radar/salle104/presence%'],
         radarDist:     ['%fablab_21_22/radar/salle104/c1_dist_cm%'],
@@ -241,6 +243,8 @@ async function buildOverviewData() {
             air:         await fetchLatestMetricByPatterns(TOPIC_PATTERNS.salle2.air),
             pm25:        await fetchLatestMetricByPatterns(TOPIC_PATTERNS.salle2.pm25),
             pm10:        await fetchLatestMetricByPatterns(TOPIC_PATTERNS.salle2.pm10),
+            pression:    await fetchLatestMetricByPatterns(TOPIC_PATTERNS.salle2.pression),
+            gaz:         await fetchLatestMetricByPatterns(TOPIC_PATTERNS.salle2.gaz),
             radarNb:     await fetchLatestMetricByPatterns(TOPIC_PATTERNS.salle2.radarNb),
             radarDist:   await fetchLatestMetricByPatterns(TOPIC_PATTERNS.salle2.radarDist),
             radarSpeed:  await fetchLatestMetricByPatterns(TOPIC_PATTERNS.salle2.radarSpeed),
@@ -275,6 +279,8 @@ async function buildOverviewData() {
             co2:               parseNumeric(metrics.salle2.co2?.value),
             qualite_air_score: airScore,
             qualite_air_label: classifyAirQuality(airScore),
+            pression:          parseNumeric(metrics.salle2.pression?.value),
+            gaz:               parseNumeric(metrics.salle2.gaz?.value),
             updated_at: metrics.salle2.temperature?.created_at || metrics.salle2.humidite?.created_at || null
         }
     };
@@ -350,7 +356,11 @@ app.get('/api/public/overview', async (req, res) => {
             'FABLAB_21_22/RADAR/salle104/nb',
             'FABLAB_21_22/RADAR/salle104/presence',
             'FABLAB_21_22/RADAR/salle104/c1_dist_cm',
-            'FABLAB_21_22/RADAR/salle104/c1_vitesse'
+            'FABLAB_21_22/RADAR/salle104/c1_vitesse',
+            'FABLAB_21_22/salle_21/CO2/temperature',
+            'FABLAB_21_22/salle_21/CO2/humidity',
+            'FABLAB_21_22/salle_21/CO2/pressure',
+            'FABLAB_21_22/salle_21/CO2/gas'
         ];
 
         const [rows] = await pool.query(
@@ -367,7 +377,9 @@ app.get('/api/public/overview', async (req, res) => {
             if (!latest[row.topic]) latest[row.topic] = row.value;
         }
 
-        // Préférer salle22 (capteur actif) puis fallback salle12
+        // Préférer salle22 puis fallback salle12 puis salle_21/CO2
+        const temp_s2 = latest['FABLAB_21_22/salle22/all/temperature'] ?? latest['FABLAB_21_22/salle12/all/temperature'] ?? latest['FABLAB_21_22/salle_21/CO2/temperature'] ?? null;
+        const hum_s2  = latest['FABLAB_21_22/salle22/all/humidite']    ?? latest['FABLAB_21_22/salle12/all/humidite']    ?? latest['FABLAB_21_22/salle_21/CO2/humidity']    ?? null;
         const pm25_s2 = latest['FABLAB_21_22/salle22/all/pm25'] ?? latest['FABLAB_21_22/salle12/all/pm25'];
         const pm10_s2 = latest['FABLAB_21_22/salle22/all/pm10'] ?? latest['FABLAB_21_22/salle12/all/pm10'];
         const co2_s2  = null; // pas de capteur CO2 réel disponible
@@ -388,19 +400,21 @@ app.get('/api/public/overview', async (req, res) => {
                 }
             },
             salle2: {
-                temperature:       latest['FABLAB_21_22/salle22/all/temperature'] ?? latest['FABLAB_21_22/salle12/all/temperature'] ?? null,
-                humidite:          latest['FABLAB_21_22/salle22/all/humidite']    ?? latest['FABLAB_21_22/salle12/all/humidite']    ?? null,
-                lumiere:           latest['FABLAB_21_22/salle22/all/lux']         ?? latest['FABLAB_21_22/salle12/all/lux']         ?? null,
+                temperature:       temp_s2,
+                humidite:          hum_s2,
+                lumiere:           latest['FABLAB_21_22/salle22/all/lux'] ?? latest['FABLAB_21_22/salle12/all/lux'] ?? null,
                 pm25:              pm25_s2 ?? null,
                 pm10:              pm10_s2 ?? null,
                 co2:               co2_s2,
                 qualite_air_score: pm25_s2 != null ? Math.min(500, Math.round(pm25_s2 * 2.0)) : null,
                 qualite_air_label: pm25_s2 != null ? (pm25_s2 < 12 ? 'Bon' : pm25_s2 < 35 ? 'Modéré' : 'Mauvais') : null,
+                pression:          latest['FABLAB_21_22/salle_21/CO2/pressure'] ?? null,
+                gaz:               latest['FABLAB_21_22/salle_21/CO2/gas']      ?? null,
                 radar: {
-                    nb:                latest['FABLAB_21_22/RADAR/salle104/nb'] ?? null,
-                    presence:          latest['FABLAB_21_22/RADAR/salle104/presence'] ?? null,
-                    distance_cm:      latest['FABLAB_21_22/RADAR/salle104/c1_dist_cm'] ?? null,
-                    vitesse_ms:       latest['FABLAB_21_22/RADAR/salle104/c1_vitesse'] ?? null
+                    nb:          latest['FABLAB_21_22/RADAR/salle104/nb']          ?? null,
+                    presence:    latest['FABLAB_21_22/RADAR/salle104/presence']    ?? null,
+                    distance_cm: latest['FABLAB_21_22/RADAR/salle104/c1_dist_cm'] ?? null,
+                    vitesse_ms:  latest['FABLAB_21_22/RADAR/salle104/c1_vitesse'] ?? null
                 }
             }
         });
@@ -428,14 +442,16 @@ app.get('/api/public/history', async (req, res) => {
 }
 
         if (room === 'salle2') {
-    const [temperature, humidite, lumiere, pm25, pm10] = await Promise.all([
+    const [temperature, humidite, lumiere, pm25, pm10, pression, gaz] = await Promise.all([
         fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.temperature, hours, limit),
         fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.humidite,    hours, limit),
         fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.lumiere,     hours, limit),
         fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.pm25,        hours, limit),
-        fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.pm10,        hours, limit)
+        fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.pm10,        hours, limit),
+        fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.pression,    hours, limit),
+        fetchHistoryByPatterns(TOPIC_PATTERNS.salle2.gaz,         hours, limit)
     ]);
-    return res.json({ room: 'salle2', hours, series: { temperature, humidite, lumiere, pm25, pm10 } });
+    return res.json({ room: 'salle2', hours, series: { temperature, humidite, lumiere, pm25, pm10, pression, gaz } });
 }
 
         const [salle1Temp, salle2Temp] = await Promise.all([
